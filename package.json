@@ -1,0 +1,21 @@
+{
+  "name": "bower-traceur-runtime",
+  "description": "Bower package for the traceur runtime.",
+  "version": "0.0.1",
+  "homepage": "http://www.tryambition.com",
+  "author": {
+    "name": "Jeff McRiffey",
+    "email": "jeff.mcriffey@tryambition.com",
+    "url": "github.com/jmcriffey"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmcriffey/bower-traceur-runtime.git"
+  },
+  "devDependencies": {
+    "traceur": "0.0.22",
+    "grunt": "~0.4.2",
+    "grunt-contrib-copy": "~0.5.0",
+    "grunt-contrib-uglify": "~0.3.2"
+  }
+}
