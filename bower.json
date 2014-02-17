@@ -5,6 +5,7 @@
     "ignore": [
         "node_modules",
         "Gruntfile.js",
-        "package.json"
+        "*.json",
+        ".*"
     ]
 }
