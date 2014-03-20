@@ -9,6 +9,9 @@ module.exports = function(grunt) {
         pkg: pkg,
         uglify: {
             main: {
+                options: {
+                    sourceMap: true
+                },
                 files: {
                     'traceur-runtime.min.js': 'traceur-runtime.js'
                 }
