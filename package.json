@@ -16,7 +16,7 @@
     "url": "https://github.com/jmcriffey/bower-traceur-runtime.git"
   },
   "devDependencies": {
-    "traceur": "0.0.30",
+    "traceur": "0.0.31",
     "grunt": "~0.4.2",
     "grunt-contrib-copy": "~0.5.0",
     "grunt-contrib-uglify": "~0.3.2",
