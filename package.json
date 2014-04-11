@@ -1,7 +1,7 @@
 {
   "name": "bower-traceur-runtime",
   "description": "A Bower package for the Google Traceur runtime.",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "homepage": "http://www.tryambition.com",
   "scripts": {
     "build": "npm install && grunt"
