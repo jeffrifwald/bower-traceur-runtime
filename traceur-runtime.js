@@ -14,6 +14,9 @@
   var $getPrototypeOf = $Object.getPrototypeOf;
   var $hasOwnProperty = $Object.prototype.hasOwnProperty;
   var $toString = $Object.prototype.toString;
+  var $preventExtensions = Object.preventExtensions;
+  var $seal = Object.seal;
+  var $isExtensible = Object.isExtensible;
   function nonEnum(value) {
     return {
       configurable: true,
@@ -77,7 +80,7 @@
     $defineProperty(this, symbolDataProperty, {value: this});
     $defineProperty(this, symbolInternalProperty, {value: key});
     $defineProperty(this, symbolDescriptionProperty, {value: description});
-    $freeze(this);
+    freeze(this);
     symbolValues[key] = this;
   }
   $defineProperty(SymbolValue.prototype, 'constructor', nonEnum(Symbol));
@@ -89,8 +92,40 @@
     value: Symbol.prototype.valueOf,
     enumerable: false
   });
-  $freeze(SymbolValue.prototype);
+  var hashProperty = newUniqueString();
+  var hashPropertyDescriptor = {value: undefined};
+  var hashObjectProperties = {
+    hash: {value: undefined},
+    self: {value: undefined}
+  };
+  var hashCounter = 0;
+  function getOwnHashObject(object) {
+    var hashObject = object[hashProperty];
+    if (hashObject && hashObject.self === object)
+      return hashObject;
+    if ($isExtensible(object)) {
+      hashObjectProperties.hash.value = hashCounter++;
+      hashObjectProperties.self.value = object;
+      hashPropertyDescriptor.value = $create(null, hashObjectProperties);
+      $defineProperty(object, hashProperty, hashPropertyDescriptor);
+      return hashPropertyDescriptor.value;
+    }
+    return undefined;
+  }
+  function freeze(object) {
+    getOwnHashObject(object);
+    return $freeze.apply(this, arguments);
+  }
+  function preventExtensions(object) {
+    getOwnHashObject(object);
+    return $preventExtensions.apply(this, arguments);
+  }
+  function seal(object) {
+    getOwnHashObject(object);
+    return $seal.apply(this, arguments);
+  }
   Symbol.iterator = Symbol();
+  freeze(SymbolValue.prototype);
   function toProperty(name) {
     if (isSymbol(name))
       return name[symbolInternalProperty];
@@ -101,7 +136,7 @@
     var names = $getOwnPropertyNames(object);
     for (var i = 0; i < names.length; i++) {
       var name = names[i];
-      if (!symbolValues[name])
+      if (!symbolValues[name] && name !== hashProperty)
         rv.push(name);
     }
     return rv;
@@ -152,6 +187,9 @@
     $defineProperty(Object, 'getOwnPropertyNames', {value: getOwnPropertyNames});
     $defineProperty(Object, 'getOwnPropertyDescriptor', {value: getOwnPropertyDescriptor});
     $defineProperty(Object.prototype, 'hasOwnProperty', {value: hasOwnProperty});
+    $defineProperty(Object, 'freeze', {value: freeze});
+    $defineProperty(Object, 'preventExtensions', {value: preventExtensions});
+    $defineProperty(Object, 'seal', {value: seal});
     Object.getOwnPropertySymbols = getOwnPropertySymbols;
     function is(left, right) {
       if (left === right)
@@ -164,7 +202,10 @@
       var p,
           length = props.length;
       for (p = 0; p < length; p++) {
-        target[props[p]] = source[props[p]];
+        var name = props[p];
+        if (name === hashProperty)
+          continue;
+        target[name] = source[name];
       }
       return target;
     }
@@ -175,6 +216,9 @@
           descriptor,
           length = props.length;
       for (p = 0; p < length; p++) {
+        var name = props[p];
+        if (name === hashProperty)
+          continue;
         descriptor = $getOwnPropertyDescriptor(source, props[p]);
         $defineProperty(target, props[p], descriptor);
       }
@@ -186,6 +230,9 @@
     for (var i = 1; i < arguments.length; i++) {
       var names = $getOwnPropertyNames(arguments[i]);
       for (var j = 0; j < names.length; j++) {
+        var name = names[j];
+        if (name === hashProperty)
+          continue;
         (function(mod, name) {
           $defineProperty(object, name, {
             get: function() {
@@ -198,10 +245,18 @@
     }
     return object;
   }
-  function toObject(value) {
-    if (value == null)
+  function isObject(x) {
+    return x != null && (typeof x === 'object' || typeof x === 'function');
+  }
+  function toObject(x) {
+    if (x == null)
       throw $TypeError();
-    return $Object(value);
+    return $Object(x);
+  }
+  function assertObject(x) {
+    if (!isObject(x))
+      throw $TypeError(x + ' is not an Object');
+    return x;
   }
   function spread() {
     var rv = [],
@@ -373,6 +428,11 @@
         default:
           throw getInternalError(this.state);
       }
+    },
+    handleException: function(ex) {
+      this.GState = ST_CLOSED;
+      this.state = END_STATE;
+      throw ex;
     }
   };
   function getNextOrThrow(ctx, moveNext, action) {
@@ -426,12 +486,17 @@
   AsyncFunctionContext.prototype.end = function() {
     switch (this.state) {
       case END_STATE:
-        return;
+        this.resolve(this.returnValue);
+        break;
       case RETHROW_STATE:
         this.reject(this.storedException);
+        break;
       default:
         this.reject(getInternalError(this.state));
     }
+  };
+  AsyncFunctionContext.prototype.handleException = function() {
+    this.state = RETHROW_STATE;
   };
   function asyncWrap(innerFunction, self) {
     var moveNext = getMoveNext(innerFunction, self);
@@ -443,12 +508,9 @@
         moveNext(ctx);
       };
     };
-    ctx.createErrback = function(newState) {
-      return function(err) {
-        ctx.state = newState;
-        ctx.err = err;
-        moveNext(ctx);
-      };
+    ctx.errback = function(err) {
+      handleCatch(ctx, err);
+      moveNext(ctx);
     };
     moveNext(ctx);
     return ctx.result;
@@ -459,19 +521,21 @@
         try {
           return innerFunction.call(self, ctx);
         } catch (ex) {
-          ctx.storedException = ex;
-          var last = ctx.tryStack_[ctx.tryStack_.length - 1];
-          if (!last) {
-            ctx.GState = ST_CLOSED;
-            ctx.state = END_STATE;
-            throw ex;
-          }
-          ctx.state = last.catch !== undefined ? last.catch : last.finally;
-          if (last.finallyFallThrough !== undefined)
-            ctx.finallyFallThrough = last.finallyFallThrough;
+          handleCatch(ctx, ex);
         }
       }
     };
+  }
+  function handleCatch(ctx, ex) {
+    ctx.storedException = ex;
+    var last = ctx.tryStack_[ctx.tryStack_.length - 1];
+    if (!last) {
+      ctx.handleException(ex);
+      return;
+    }
+    ctx.state = last.catch !== undefined ? last.catch : last.finally;
+    if (last.finallyFallThrough !== undefined)
+      ctx.finallyFallThrough = last.finallyFallThrough;
   }
   function setupGlobals(global) {
     global.Symbol = Symbol;
@@ -479,6 +543,7 @@
   }
   setupGlobals(global);
   global.$traceurRuntime = {
+    assertObject: assertObject,
     asyncWrap: asyncWrap,
     createClass: createClass,
     defaultSuperCall: defaultSuperCall,
@@ -493,7 +558,8 @@
     toObject: toObject,
     toProperty: toProperty,
     type: types,
-    typeof: typeOf
+    typeof: typeOf,
+    getOwnHashObject: getOwnHashObject
   };
 })(typeof global !== 'undefined' ? global : this);
 (function() {
@@ -619,7 +685,7 @@
 })();
 (function(global) {
   'use strict';
-  var $__2 = $traceurRuntime,
+  var $__2 = $traceurRuntime.assertObject($traceurRuntime),
       canonicalizeUrl = $__2.canonicalizeUrl,
       resolveUrl = $__2.resolveUrl,
       isAbsolute = $__2.isAbsolute;
@@ -765,12 +831,15 @@
     return instantiator && instantiator.getUncoatedModule();
   };
 })(typeof global !== 'undefined' ? global : this);
-System.register("traceur-runtime@0.0.32/src/runtime/polyfills/utils", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/utils", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfills/utils";
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/utils";
   var toObject = $traceurRuntime.toObject;
   function toUint32(x) {
     return x | 0;
+  }
+  function isObject(x) {
+    return x && (typeof x === 'object' || typeof x === 'function');
   }
   return {
     get toObject() {
@@ -778,14 +847,17 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/utils", [], functi
     },
     get toUint32() {
       return toUint32;
+    },
+    get isObject() {
+      return isObject;
     }
   };
 });
-System.register("traceur-runtime@0.0.32/src/runtime/polyfills/ArrayIterator", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/ArrayIterator", [], function() {
   "use strict";
   var $__4;
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfills/ArrayIterator";
-  var $__5 = System.get("traceur-runtime@0.0.32/src/runtime/polyfills/utils"),
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/ArrayIterator";
+  var $__5 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/utils")),
       toObject = $__5.toObject,
       toUint32 = $__5.toUint32;
   var ARRAY_ITERATOR_KIND_KEYS = 1;
@@ -859,9 +931,132 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/ArrayIterator", []
     }
   };
 });
-System.register("traceur-runtime@0.0.32/node_modules/rsvp/lib/rsvp/asap", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/Map", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/node_modules/rsvp/lib/rsvp/asap";
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/Map";
+  var isObject = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/utils")).isObject;
+  var getOwnHashObject = $traceurRuntime.getOwnHashObject;
+  var $hasOwnProperty = Object.prototype.hasOwnProperty;
+  var deletedSentinel = {};
+  function lookupIndex(map, key) {
+    if (isObject(key)) {
+      var hashObject = getOwnHashObject(key);
+      return hashObject && map.objectIndex_[hashObject.hash];
+    }
+    if (typeof key === 'string')
+      return map.stringIndex_[key];
+    return map.primitiveIndex_[key];
+  }
+  function initMap(map) {
+    map.entries_ = [];
+    map.objectIndex_ = Object.create(null);
+    map.stringIndex_ = Object.create(null);
+    map.primitiveIndex_ = Object.create(null);
+    map.deletedCount_ = 0;
+  }
+  var Map = function Map() {
+    var iterable = arguments[0];
+    if (!isObject(this))
+      throw new TypeError("Constructor Map requires 'new'");
+    if ($hasOwnProperty.call(this, 'entries_')) {
+      throw new TypeError("Map can not be reentrantly initialised");
+    }
+    initMap(this);
+    if (iterable !== null && iterable !== undefined) {
+      var iter = iterable[Symbol.iterator];
+      if (iter !== undefined) {
+        for (var $__7 = iterable[Symbol.iterator](),
+            $__8; !($__8 = $__7.next()).done; ) {
+          var $__9 = $traceurRuntime.assertObject($__8.value),
+              key = $__9[0],
+              value = $__9[1];
+          {
+            this.set(key, value);
+          }
+        }
+      }
+    }
+  };
+  ($traceurRuntime.createClass)(Map, {
+    get size() {
+      return this.entries_.length / 2 - this.deletedCount_;
+    },
+    get: function(key) {
+      var index = lookupIndex(this, key);
+      if (index !== undefined)
+        return this.entries_[index + 1];
+    },
+    set: function(key, value) {
+      var objectMode = isObject(key);
+      var stringMode = typeof key === 'string';
+      var index = lookupIndex(this, key);
+      if (index !== undefined) {
+        this.entries_[index + 1] = value;
+      } else {
+        index = this.entries_.length;
+        this.entries_[index] = key;
+        this.entries_[index + 1] = value;
+        if (objectMode) {
+          var hashObject = getOwnHashObject(key);
+          var hash = hashObject.hash;
+          this.objectIndex_[hash] = index;
+        } else if (stringMode) {
+          this.stringIndex_[key] = index;
+        } else {
+          this.primitiveIndex_[key] = index;
+        }
+      }
+      return this;
+    },
+    has: function(key) {
+      return lookupIndex(this, key) !== undefined;
+    },
+    delete: function(key) {
+      var objectMode = isObject(key);
+      var stringMode = typeof key === 'string';
+      var index;
+      var hash;
+      if (objectMode) {
+        var hashObject = getOwnHashObject(key);
+        if (hashObject) {
+          index = this.objectIndex_[hash = hashObject.hash];
+          delete this.objectIndex_[hash];
+        }
+      } else if (stringMode) {
+        index = this.stringIndex_[key];
+        delete this.stringIndex_[key];
+      } else {
+        index = this.primitiveIndex_[key];
+        delete this.primitiveIndex_[key];
+      }
+      if (index !== undefined) {
+        this.entries_[index] = deletedSentinel;
+        this.entries_[index + 1] = undefined;
+        this.deletedCount_++;
+      }
+    },
+    clear: function() {
+      initMap(this);
+    },
+    forEach: function(callbackFn) {
+      var thisArg = arguments[1];
+      for (var i = 0,
+          len = this.entries_.length; i < len; i += 2) {
+        var key = this.entries_[i];
+        var value = this.entries_[i + 1];
+        if (key === deletedSentinel)
+          continue;
+        callbackFn.call(thisArg, value, key, this);
+      }
+    }
+  }, {});
+  return {get Map() {
+      return Map;
+    }};
+});
+System.register("traceur-runtime@0.0.33/node_modules/rsvp/lib/rsvp/asap", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.33/node_modules/rsvp/lib/rsvp/asap";
   var $__default = function asap(callback, arg) {
     var length = queue.push([callback, arg]);
     if (length === 1) {
@@ -911,82 +1106,121 @@ System.register("traceur-runtime@0.0.32/node_modules/rsvp/lib/rsvp/asap", [], fu
       return $__default;
     }};
 });
-System.register("traceur-runtime@0.0.32/src/runtime/polyfills/Promise", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/Promise", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfills/Promise";
-  var async = System.get("traceur-runtime@0.0.32/node_modules/rsvp/lib/rsvp/asap").default;
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/Promise";
+  var async = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/node_modules/rsvp/lib/rsvp/asap")).default;
+  var promiseRaw = {};
   function isPromise(x) {
     return x && typeof x === 'object' && x.status_ !== undefined;
   }
+  function idResolveHandler(x) {
+    return x;
+  }
+  function idRejectHandler(x) {
+    throw x;
+  }
   function chain(promise) {
-    var onResolve = arguments[1] !== (void 0) ? arguments[1] : (function(x) {
-      return x;
-    });
-    var onReject = arguments[2] !== (void 0) ? arguments[2] : (function(e) {
-      throw e;
-    });
+    var onResolve = arguments[1] !== (void 0) ? arguments[1] : idResolveHandler;
+    var onReject = arguments[2] !== (void 0) ? arguments[2] : idRejectHandler;
     var deferred = getDeferred(promise.constructor);
     switch (promise.status_) {
       case undefined:
         throw TypeError;
-      case 'pending':
-        promise.onResolve_.push([deferred, onResolve]);
-        promise.onReject_.push([deferred, onReject]);
+      case 0:
+        promise.onResolve_.push(onResolve, deferred);
+        promise.onReject_.push(onReject, deferred);
         break;
-      case 'resolved':
-        promiseReact(deferred, onResolve, promise.value_);
+      case +1:
+        promiseEnqueue(promise.value_, [onResolve, deferred]);
         break;
-      case 'rejected':
-        promiseReact(deferred, onReject, promise.value_);
+      case -1:
+        promiseEnqueue(promise.value_, [onReject, deferred]);
         break;
     }
     return deferred.promise;
   }
   function getDeferred(C) {
-    var result = {};
-    result.promise = new C((function(resolve, reject) {
-      result.resolve = resolve;
-      result.reject = reject;
-    }));
-    return result;
+    if (this === $Promise) {
+      var promise = promiseInit(new $Promise(promiseRaw));
+      return {
+        promise: promise,
+        resolve: (function(x) {
+          promiseResolve(promise, x);
+        }),
+        reject: (function(r) {
+          promiseReject(promise, r);
+        })
+      };
+    } else {
+      var result = {};
+      result.promise = new C((function(resolve, reject) {
+        result.resolve = resolve;
+        result.reject = reject;
+      }));
+      return result;
+    }
+  }
+  function promiseSet(promise, status, value, onResolve, onReject) {
+    promise.status_ = status;
+    promise.value_ = value;
+    promise.onResolve_ = onResolve;
+    promise.onReject_ = onReject;
+    return promise;
+  }
+  function promiseInit(promise) {
+    return promiseSet(promise, 0, undefined, [], []);
   }
   var Promise = function Promise(resolver) {
-    var $__6 = this;
-    this.status_ = 'pending';
-    this.onResolve_ = [];
-    this.onReject_ = [];
-    resolver((function(x) {
-      promiseResolve($__6, x);
-    }), (function(r) {
-      promiseReject($__6, r);
-    }));
+    if (resolver === promiseRaw)
+      return;
+    if (typeof resolver !== 'function')
+      throw new TypeError;
+    var promise = promiseInit(this);
+    try {
+      resolver((function(x) {
+        promiseResolve(promise, x);
+      }), (function(r) {
+        promiseReject(promise, r);
+      }));
+    } catch (e) {
+      promiseReject(promise, e);
+    }
   };
   ($traceurRuntime.createClass)(Promise, {
     catch: function(onReject) {
       return this.then(undefined, onReject);
     },
-    then: function() {
-      var onResolve = arguments[0] !== (void 0) ? arguments[0] : (function(x) {
-        return x;
-      });
-      var onReject = arguments[1];
-      var $__6 = this;
+    then: function(onResolve, onReject) {
+      if (typeof onResolve !== 'function')
+        onResolve = idResolveHandler;
+      if (typeof onReject !== 'function')
+        onReject = idRejectHandler;
+      var that = this;
       var constructor = this.constructor;
-      return chain(this, (function(x) {
+      return chain(this, function(x) {
         x = promiseCoerce(constructor, x);
-        return x === $__6 ? onReject(new TypeError) : isPromise(x) ? x.then(onResolve, onReject) : onResolve(x);
-      }), onReject);
+        return x === that ? onReject(new TypeError) : isPromise(x) ? x.then(onResolve, onReject) : onResolve(x);
+      }, onReject);
     }
   }, {
     resolve: function(x) {
-      return new this((function(resolve, reject) {
-        resolve(x);
-      }));
+      if (this === $Promise) {
+        return promiseSet(new $Promise(promiseRaw), +1, x);
+      } else {
+        return new this(function(resolve, reject) {
+          resolve(x);
+        });
+      }
     },
     reject: function(r) {
-      return new this((function(resolve, reject) {
-        reject(r);
-      }));
+      if (this === $Promise) {
+        return promiseSet(new $Promise(promiseRaw), -1, r);
+      } else {
+        return new this((function(resolve, reject) {
+          reject(r);
+        }));
+      }
     },
     cast: function(x) {
       if (x instanceof this)
@@ -1000,23 +1234,22 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/Promise", [], func
     },
     all: function(values) {
       var deferred = getDeferred(this);
-      var count = 0;
       var resolutions = [];
       try {
-        for (var i = 0; i < values.length; i++) {
-          ++count;
-          this.cast(values[i]).then(function(i, x) {
-            resolutions[i] = x;
-            if (--count === 0)
-              deferred.resolve(resolutions);
-          }.bind(undefined, i), (function(r) {
-            if (count > 0)
-              count = 0;
-            deferred.reject(r);
-          }));
-        }
-        if (count === 0)
+        var count = values.length;
+        if (count === 0) {
           deferred.resolve(resolutions);
+        } else {
+          for (var i = 0; i < values.length; i++) {
+            this.resolve(values[i]).then(function(i, x) {
+              resolutions[i] = x;
+              if (--count === 0)
+                deferred.resolve(resolutions);
+            }.bind(undefined, i), (function(r) {
+              deferred.reject(r);
+            }));
+          }
+        }
       } catch (e) {
         deferred.reject(e);
       }
@@ -1026,7 +1259,7 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/Promise", [], func
       var deferred = getDeferred(this);
       try {
         for (var i = 0; i < values.length; i++) {
-          this.cast(values[i]).then((function(x) {
+          this.resolve(values[i]).then((function(x) {
             deferred.resolve(x);
           }), (function(r) {
             deferred.reject(r);
@@ -1038,66 +1271,81 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/Promise", [], func
       return deferred.promise;
     }
   });
+  var $Promise = Promise;
+  var $PromiseReject = $Promise.reject;
   function promiseResolve(promise, x) {
-    promiseDone(promise, 'resolved', x, promise.onResolve_);
+    promiseDone(promise, +1, x, promise.onResolve_);
   }
   function promiseReject(promise, r) {
-    promiseDone(promise, 'rejected', r, promise.onReject_);
+    promiseDone(promise, -1, r, promise.onReject_);
   }
   function promiseDone(promise, status, value, reactions) {
-    if (promise.status_ !== 'pending')
+    if (promise.status_ !== 0)
       return;
-    for (var i = 0; i < reactions.length; i++) {
-      promiseReact(reactions[i][0], reactions[i][1], value);
-    }
-    promise.status_ = status;
-    promise.value_ = value;
-    promise.onResolve_ = promise.onReject_ = undefined;
+    promiseEnqueue(value, reactions);
+    promiseSet(promise, status, value);
   }
-  function promiseReact(deferred, handler, x) {
+  function promiseEnqueue(value, tasks) {
     async((function() {
-      try {
-        var y = handler(x);
-        if (y === deferred.promise)
-          throw new TypeError;
-        else if (isPromise(y))
-          chain(y, deferred.resolve, deferred.reject);
-        else
-          deferred.resolve(y);
-      } catch (e) {
-        deferred.reject(e);
+      for (var i = 0; i < tasks.length; i += 2) {
+        promiseHandle(value, tasks[i], tasks[i + 1]);
       }
     }));
   }
-  var thenableSymbol = '@@thenable';
-  function promiseCoerce(constructor, x) {
-    if (isPromise(x)) {
-      return x;
-    } else if (x && typeof x.then === 'function') {
-      var p = x[thenableSymbol];
-      if (p) {
-        return p;
-      } else {
-        var deferred = getDeferred(constructor);
-        x[thenableSymbol] = deferred.promise;
-        try {
-          x.then(deferred.resolve, deferred.reject);
-        } catch (e) {
-          deferred.reject(e);
-        }
-        return deferred.promise;
-      }
-    } else {
-      return x;
+  function promiseHandle(value, handler, deferred) {
+    try {
+      var result = handler(value);
+      if (result === deferred.promise)
+        throw new TypeError;
+      else if (isPromise(result))
+        chain(result, deferred.resolve, deferred.reject);
+      else
+        deferred.resolve(result);
+    } catch (e) {
+      try {
+        deferred.reject(e);
+      } catch (e) {}
     }
+  }
+  var thenableSymbol = '@@thenable';
+  function isObject(x) {
+    return x && (typeof x === 'object' || typeof x === 'function');
+  }
+  function promiseCoerce(constructor, x) {
+    if (!isPromise(x) && isObject(x)) {
+      var then;
+      try {
+        then = x.then;
+      } catch (r) {
+        var promise = $PromiseReject.call(constructor, r);
+        x[thenableSymbol] = promise;
+        return promise;
+      }
+      if (typeof then === 'function') {
+        var p = x[thenableSymbol];
+        if (p) {
+          return p;
+        } else {
+          var deferred = getDeferred(constructor);
+          x[thenableSymbol] = deferred.promise;
+          try {
+            then.call(x, deferred.resolve, deferred.reject);
+          } catch (r) {
+            deferred.reject(r);
+          }
+          return deferred.promise;
+        }
+      }
+    }
+    return x;
   }
   return {get Promise() {
       return Promise;
     }};
 });
-System.register("traceur-runtime@0.0.32/src/runtime/polyfills/String", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/String", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfills/String";
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/String";
   var $toString = Object.prototype.toString;
   var $indexOf = String.prototype.indexOf;
   var $lastIndexOf = String.prototype.lastIndexOf;
@@ -1266,22 +1514,23 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/String", [], funct
     }
   };
 });
-System.register("traceur-runtime@0.0.32/src/runtime/polyfills/polyfills", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfills/polyfills", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfills/polyfills";
-  var Promise = System.get("traceur-runtime@0.0.32/src/runtime/polyfills/Promise").Promise;
-  var $__9 = System.get("traceur-runtime@0.0.32/src/runtime/polyfills/String"),
-      codePointAt = $__9.codePointAt,
-      contains = $__9.contains,
-      endsWith = $__9.endsWith,
-      fromCodePoint = $__9.fromCodePoint,
-      repeat = $__9.repeat,
-      raw = $__9.raw,
-      startsWith = $__9.startsWith;
-  var $__9 = System.get("traceur-runtime@0.0.32/src/runtime/polyfills/ArrayIterator"),
-      entries = $__9.entries,
-      keys = $__9.keys,
-      values = $__9.values;
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfills/polyfills";
+  var Map = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/Map")).Map;
+  var Promise = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/Promise")).Promise;
+  var $__12 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/String")),
+      codePointAt = $__12.codePointAt,
+      contains = $__12.contains,
+      endsWith = $__12.endsWith,
+      fromCodePoint = $__12.fromCodePoint,
+      repeat = $__12.repeat,
+      raw = $__12.raw,
+      startsWith = $__12.startsWith;
+  var $__12 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/ArrayIterator")),
+      entries = $__12.entries,
+      keys = $__12.keys,
+      values = $__12.values;
   function maybeDefineMethod(object, name, value) {
     if (!(name in object)) {
       Object.defineProperty(object, name, {
@@ -1303,6 +1552,10 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/polyfills", [], fu
     if (!global.Promise)
       global.Promise = Promise;
   }
+  function polyfillCollections(global) {
+    if (!global.Map)
+      global.Map = Map;
+  }
   function polyfillString(String) {
     maybeAddFunctions(String.prototype, ['codePointAt', codePointAt, 'contains', contains, 'endsWith', endsWith, 'startsWith', startsWith, 'repeat', repeat]);
     maybeAddFunctions(String, ['fromCodePoint', fromCodePoint, 'raw', raw]);
@@ -1320,6 +1573,7 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/polyfills", [], fu
   }
   function polyfill(global) {
     polyfillPromise(global);
+    polyfillCollections(global);
     polyfillString(global.String);
     polyfillArray(global.Array, global.Symbol);
   }
@@ -1331,10 +1585,10 @@ System.register("traceur-runtime@0.0.32/src/runtime/polyfills/polyfills", [], fu
   };
   return {};
 });
-System.register("traceur-runtime@0.0.32/src/runtime/polyfill-import", [], function() {
+System.register("traceur-runtime@0.0.33/src/runtime/polyfill-import", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.32/src/runtime/polyfill-import";
-  var $__11 = System.get("traceur-runtime@0.0.32/src/runtime/polyfills/polyfills");
+  var __moduleName = "traceur-runtime@0.0.33/src/runtime/polyfill-import";
+  var $__14 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.33/src/runtime/polyfills/polyfills"));
   return {};
 });
-System.get("traceur-runtime@0.0.32/src/runtime/polyfill-import" + '');
+System.get("traceur-runtime@0.0.33/src/runtime/polyfill-import" + '');
