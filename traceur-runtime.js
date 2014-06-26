@@ -875,9 +875,9 @@
     return instantiator && instantiator.getUncoatedModule();
   };
 })(typeof global !== 'undefined' ? global : this);
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/utils", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/utils", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/utils";
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/utils";
   var toObject = $traceurRuntime.toObject;
   function toUint32(x) {
     return x | 0;
@@ -934,16 +934,16 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/utils", [], functi
     }
   };
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Array", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/Array", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/Array";
-  var $__5 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/utils")),
-      isCallable = $__5.isCallable,
-      isConstructor = $__5.isConstructor,
-      checkIterable = $__5.checkIterable,
-      toInteger = $__5.toInteger,
-      toLength = $__5.toLength,
-      toObject = $__5.toObject;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/Array";
+  var $__3 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/utils"),
+      isCallable = $__3.isCallable,
+      isConstructor = $__3.isConstructor,
+      checkIterable = $__3.checkIterable,
+      toInteger = $__3.toInteger,
+      toLength = $__3.toLength,
+      toObject = $__3.toObject;
   function from(arrLike) {
     var mapFn = arguments[1];
     var thisArg = arguments[2];
@@ -958,9 +958,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Array", [], functi
     }
     if (checkIterable(items)) {
       arr = isConstructor(C) ? new C() : [];
-      for (var $__3 = items[Symbol.iterator](),
-          $__4; !($__4 = $__3.next()).done; ) {
-        var item = $__4.value;
+      for (var $__4 = items[Symbol.iterator](),
+          $__5; !($__5 = $__4.next()).done; ) {
+        var item = $__5.value;
         {
           if (mapping) {
             arr[k] = mapFn.call(thisArg, item, k);
@@ -1041,18 +1041,18 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Array", [], functi
     }
   };
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/ArrayIterator", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/ArrayIterator", [], function() {
   "use strict";
-  var $__7;
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/ArrayIterator";
-  var $__8 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/utils")),
-      toObject = $__8.toObject,
-      toUint32 = $__8.toUint32;
+  var $__8;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/ArrayIterator";
+  var $__6 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/utils"),
+      toObject = $__6.toObject,
+      toUint32 = $__6.toUint32;
   var ARRAY_ITERATOR_KIND_KEYS = 1;
   var ARRAY_ITERATOR_KIND_VALUES = 2;
   var ARRAY_ITERATOR_KIND_ENTRIES = 3;
   var ArrayIterator = function ArrayIterator() {};
-  ($traceurRuntime.createClass)(ArrayIterator, ($__7 = {}, Object.defineProperty($__7, "next", {
+  ($traceurRuntime.createClass)(ArrayIterator, ($__8 = {}, Object.defineProperty($__8, "next", {
     value: function() {
       var iterator = toObject(this);
       var array = iterator.iteratorObject_;
@@ -1076,14 +1076,14 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/ArrayIterator", []
     configurable: true,
     enumerable: true,
     writable: true
-  }), Object.defineProperty($__7, Symbol.iterator, {
+  }), Object.defineProperty($__8, Symbol.iterator, {
     value: function() {
       return this;
     },
     configurable: true,
     enumerable: true,
     writable: true
-  }), $__7), {});
+  }), $__8), {});
   function createArrayIterator(array, kind) {
     var object = toObject(array);
     var iterator = new ArrayIterator;
@@ -1119,10 +1119,10 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/ArrayIterator", []
     }
   };
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/Map", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/Map";
-  var isObject = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/utils")).isObject;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/Map";
+  var isObject = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/utils").isObject;
   var getOwnHashObject = $traceurRuntime.getOwnHashObject;
   var $hasOwnProperty = Object.prototype.hasOwnProperty;
   var deletedSentinel = {};
@@ -1151,11 +1151,11 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
     }
     initMap(this);
     if (iterable !== null && iterable !== undefined) {
-      for (var $__10 = iterable[Symbol.iterator](),
-          $__11; !($__11 = $__10.next()).done; ) {
-        var $__12 = $traceurRuntime.assertObject($__11.value),
-            key = $__12[0],
-            value = $__12[1];
+      for (var $__11 = iterable[Symbol.iterator](),
+          $__12; !($__12 = $__11.next()).done; ) {
+        var $__13 = $traceurRuntime.assertObject($__12.value),
+            key = $__13[0],
+            value = $__13[1];
         {
           this.set(key, value);
         }
@@ -1234,7 +1234,7 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
         callbackFn.call(thisArg, value, key, this);
       }
     },
-    entries: $traceurRuntime.initGeneratorFunction(function $__13() {
+    entries: $traceurRuntime.initGeneratorFunction(function $__14() {
       var i,
           len,
           key,
@@ -1271,9 +1271,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
             default:
               return $ctx.end();
           }
-      }, $__13, this);
+      }, $__14, this);
     }),
-    keys: $traceurRuntime.initGeneratorFunction(function $__14() {
+    keys: $traceurRuntime.initGeneratorFunction(function $__15() {
       var i,
           len,
           key,
@@ -1310,9 +1310,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
             default:
               return $ctx.end();
           }
-      }, $__14, this);
+      }, $__15, this);
     }),
-    values: $traceurRuntime.initGeneratorFunction(function $__15() {
+    values: $traceurRuntime.initGeneratorFunction(function $__16() {
       var i,
           len,
           key,
@@ -1349,7 +1349,7 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
             default:
               return $ctx.end();
           }
-      }, $__15, this);
+      }, $__16, this);
     })
   }, {});
   Object.defineProperty(Map.prototype, Symbol.iterator, {
@@ -1361,20 +1361,20 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Map", [], function
       return Map;
     }};
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Object", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/Object", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/Object";
-  var $__16 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/utils")),
-      toInteger = $__16.toInteger,
-      toLength = $__16.toLength,
-      toObject = $__16.toObject,
-      isCallable = $__16.isCallable;
-  var $__16 = $traceurRuntime.assertObject($traceurRuntime),
-      defineProperty = $__16.defineProperty,
-      getOwnPropertyDescriptor = $__16.getOwnPropertyDescriptor,
-      getOwnPropertyNames = $__16.getOwnPropertyNames,
-      keys = $__16.keys,
-      privateNames = $__16.privateNames;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/Object";
+  var $__17 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/utils"),
+      toInteger = $__17.toInteger,
+      toLength = $__17.toLength,
+      toObject = $__17.toObject,
+      isCallable = $__17.isCallable;
+  var $__18 = $traceurRuntime.assertObject($traceurRuntime),
+      defineProperty = $__18.defineProperty,
+      getOwnPropertyDescriptor = $__18.getOwnPropertyDescriptor,
+      getOwnPropertyNames = $__18.getOwnPropertyNames,
+      keys = $__18.keys,
+      privateNames = $__18.privateNames;
   function is(left, right) {
     if (left === right)
       return left !== 0 || 1 / left === 1 / right;
@@ -1421,9 +1421,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Object", [], funct
     }
   };
 });
-System.register("traceur-runtime@0.0.45/node_modules/rsvp/lib/rsvp/asap", [], function() {
+System.register("traceur-runtime@0.0.49/node_modules/rsvp/lib/rsvp/asap", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/node_modules/rsvp/lib/rsvp/asap";
+  var __moduleName = "traceur-runtime@0.0.49/node_modules/rsvp/lib/rsvp/asap";
   function asap(callback, arg) {
     var length = queue.push([callback, arg]);
     if (length === 1) {
@@ -1475,10 +1475,10 @@ System.register("traceur-runtime@0.0.45/node_modules/rsvp/lib/rsvp/asap", [], fu
       return $__default;
     }};
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Promise", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/Promise", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/Promise";
-  var async = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/node_modules/rsvp/lib/rsvp/asap")).default;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/Promise";
+  var async = System.get("traceur-runtime@0.0.49/node_modules/rsvp/lib/rsvp/asap").default;
   var promiseRaw = {};
   function isPromise(x) {
     return x && typeof x === 'object' && x.status_ !== undefined;
@@ -1712,11 +1712,11 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Promise", [], func
       return Promise;
     }};
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Set", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/Set", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/Set";
-  var isObject = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/utils")).isObject;
-  var Map = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Map")).Map;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/Set";
+  var isObject = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/utils").isObject;
+  var Map = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Map").Map;
   var getOwnHashObject = $traceurRuntime.getOwnHashObject;
   var $hasOwnProperty = Object.prototype.hasOwnProperty;
   function initSet(set) {
@@ -1731,9 +1731,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Set", [], function
     }
     initSet(this);
     if (iterable !== null && iterable !== undefined) {
-      for (var $__21 = iterable[Symbol.iterator](),
-          $__22; !($__22 = $__21.next()).done; ) {
-        var item = $__22.value;
+      for (var $__25 = iterable[Symbol.iterator](),
+          $__26; !($__26 = $__25.next()).done; ) {
+        var item = $__26.value;
         {
           this.add(item);
         }
@@ -1758,43 +1758,12 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Set", [], function
     },
     forEach: function(callbackFn) {
       var thisArg = arguments[1];
-      var $__19 = this;
+      var $__23 = this;
       return this.map_.forEach((function(value, key) {
-        callbackFn.call(thisArg, key, key, $__19);
+        callbackFn.call(thisArg, key, key, $__23);
       }));
     },
-    values: $traceurRuntime.initGeneratorFunction(function $__24() {
-      var $__25,
-          $__26;
-      return $traceurRuntime.createGeneratorInstance(function($ctx) {
-        while (true)
-          switch ($ctx.state) {
-            case 0:
-              $__25 = this.map_.keys()[Symbol.iterator]();
-              $ctx.sent = void 0;
-              $ctx.action = 'next';
-              $ctx.state = 12;
-              break;
-            case 12:
-              $__26 = $__25[$ctx.action]($ctx.sentIgnoreThrow);
-              $ctx.state = 9;
-              break;
-            case 9:
-              $ctx.state = ($__26.done) ? 3 : 2;
-              break;
-            case 3:
-              $ctx.sent = $__26.value;
-              $ctx.state = -2;
-              break;
-            case 2:
-              $ctx.state = 12;
-              return $__26.value;
-            default:
-              return $ctx.end();
-          }
-      }, $__24, this);
-    }),
-    keys: $traceurRuntime.initGeneratorFunction(function $__27() {
+    values: $traceurRuntime.initGeneratorFunction(function $__27() {
       var $__28,
           $__29;
       return $traceurRuntime.createGeneratorInstance(function($ctx) {
@@ -1824,6 +1793,37 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Set", [], function
               return $ctx.end();
           }
       }, $__27, this);
+    }),
+    keys: $traceurRuntime.initGeneratorFunction(function $__30() {
+      var $__31,
+          $__32;
+      return $traceurRuntime.createGeneratorInstance(function($ctx) {
+        while (true)
+          switch ($ctx.state) {
+            case 0:
+              $__31 = this.map_.keys()[Symbol.iterator]();
+              $ctx.sent = void 0;
+              $ctx.action = 'next';
+              $ctx.state = 12;
+              break;
+            case 12:
+              $__32 = $__31[$ctx.action]($ctx.sentIgnoreThrow);
+              $ctx.state = 9;
+              break;
+            case 9:
+              $ctx.state = ($__32.done) ? 3 : 2;
+              break;
+            case 3:
+              $ctx.sent = $__32.value;
+              $ctx.state = -2;
+              break;
+            case 2:
+              $ctx.state = 12;
+              return $__32.value;
+            default:
+              return $ctx.end();
+          }
+      }, $__30, this);
     })
   }, {});
   Object.defineProperty(Set.prototype, Symbol.iterator, {
@@ -1835,9 +1835,9 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/Set", [], function
       return Set;
     }};
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/String", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/String", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/String";
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/String";
   var $toString = Object.prototype.toString;
   var $indexOf = String.prototype.indexOf;
   var $lastIndexOf = String.prototype.lastIndexOf;
@@ -2006,33 +2006,33 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/String", [], funct
     }
   };
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfills/polyfills", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfills/polyfills", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfills/polyfills";
-  var Map = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Map")).Map;
-  var Set = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Set")).Set;
-  var Promise = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Promise")).Promise;
-  var $__30 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/String")),
-      codePointAt = $__30.codePointAt,
-      contains = $__30.contains,
-      endsWith = $__30.endsWith,
-      fromCodePoint = $__30.fromCodePoint,
-      repeat = $__30.repeat,
-      raw = $__30.raw,
-      startsWith = $__30.startsWith;
-  var $__30 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Array")),
-      fill = $__30.fill,
-      find = $__30.find,
-      findIndex = $__30.findIndex,
-      from = $__30.from;
-  var $__30 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/ArrayIterator")),
-      entries = $__30.entries,
-      keys = $__30.keys,
-      values = $__30.values;
-  var $__30 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/Object")),
-      assign = $__30.assign,
-      is = $__30.is,
-      mixin = $__30.mixin;
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfills/polyfills";
+  var Map = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Map").Map;
+  var Set = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Set").Set;
+  var Promise = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Promise").Promise;
+  var $__36 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/String"),
+      codePointAt = $__36.codePointAt,
+      contains = $__36.contains,
+      endsWith = $__36.endsWith,
+      fromCodePoint = $__36.fromCodePoint,
+      repeat = $__36.repeat,
+      raw = $__36.raw,
+      startsWith = $__36.startsWith;
+  var $__37 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Array"),
+      fill = $__37.fill,
+      find = $__37.find,
+      findIndex = $__37.findIndex,
+      from = $__37.from;
+  var $__38 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/ArrayIterator"),
+      entries = $__38.entries,
+      keys = $__38.keys,
+      values = $__38.values;
+  var $__39 = System.get("traceur-runtime@0.0.49/src/runtime/polyfills/Object"),
+      assign = $__39.assign,
+      is = $__39.is,
+      mixin = $__39.mixin;
   function maybeDefineMethod(object, name, value) {
     if (!(name in object)) {
       Object.defineProperty(object, name, {
@@ -2094,10 +2094,10 @@ System.register("traceur-runtime@0.0.45/src/runtime/polyfills/polyfills", [], fu
   };
   return {};
 });
-System.register("traceur-runtime@0.0.45/src/runtime/polyfill-import", [], function() {
+System.register("traceur-runtime@0.0.49/src/runtime/polyfill-import", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.45/src/runtime/polyfill-import";
-  var $__32 = $traceurRuntime.assertObject(System.get("traceur-runtime@0.0.45/src/runtime/polyfills/polyfills"));
+  var __moduleName = "traceur-runtime@0.0.49/src/runtime/polyfill-import";
+  System.get("traceur-runtime@0.0.49/src/runtime/polyfills/polyfills");
   return {};
 });
-System.get("traceur-runtime@0.0.45/src/runtime/polyfill-import" + '');
+System.get("traceur-runtime@0.0.49/src/runtime/polyfill-import" + '');
