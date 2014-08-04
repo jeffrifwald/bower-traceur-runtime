@@ -1,7 +1,7 @@
 {
   "name": "bower-traceur-runtime",
   "description": "A Bower package for the Google Traceur runtime.",
-  "version": "0.0.51",
+  "version": "0.0.54",
   "homepage": "http://ambition.com",
   "scripts": {
     "build": "npm install && grunt"
@@ -16,7 +16,7 @@
     "url": "https://github.com/jmcriffey/bower-traceur-runtime.git"
   },
   "devDependencies": {
-    "traceur": "0.0.51",
+    "traceur": "0.0.54",
     "grunt": "~0.4.2",
     "grunt-contrib-copy": "~0.5.0",
     "grunt-contrib-uglify": "~0.3.2",
