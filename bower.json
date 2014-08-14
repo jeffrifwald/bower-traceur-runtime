@@ -1,6 +1,6 @@
 {
     "name": "traceur-runtime",
-    "version": "0.0.56",
+    "version": "0.0.52",
     "main": "./traceur-runtime.js",
     "ignore": [
         "node_modules",
