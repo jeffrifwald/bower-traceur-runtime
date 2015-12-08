@@ -23,7 +23,7 @@
     "grunt-cli": "^0.1.13"
   },
   "format": "global",
-  "modules": {
+  "meta": {
     "traceur-runtime.js": {
       "exports": "$traceurRuntime"
     }
