@@ -3,260 +3,19 @@
   if (global.$traceurRuntime) {
     return;
   }
-  var $Object = Object;
-  var $TypeError = TypeError;
-  var $create = $Object.create;
-  var $defineProperty = $Object.defineProperty;
-  var $freeze = $Object.freeze;
-  var $getOwnPropertyNames = $Object.getOwnPropertyNames;
-  var $keys = $Object.keys;
-  var $apply = Function.prototype.call.bind(Function.prototype.apply);
-  var $random = Math.random;
-  var $getOwnPropertySymbols = $Object.getOwnPropertySymbols;
-  var $Symbol = global.Symbol;
-  var $WeakMap = global.WeakMap;
-  var hasNativeSymbol = $getOwnPropertySymbols && typeof $Symbol === 'function';
-  var hasNativeWeakMap = typeof $WeakMap === 'function';
-  function $bind(operand, thisArg, args) {
-    var argArray = [thisArg];
-    for (var i = 0; i < args.length; i++) {
-      argArray[i + 1] = args[i];
-    }
-    var func = $apply(Function.prototype.bind, operand, argArray);
-    return func;
+  function setupGlobals(global) {
+    global.Reflect = global.Reflect || {};
+    global.Reflect.global = global.Reflect.global || global;
   }
-  function $construct(func, argArray) {
-    var object = new ($bind(func, null, argArray));
-    return object;
-  }
-  var counter = Date.now() % 1e9;
-  function newUniqueString() {
-    return '__$' + ($random() * 1e9 >>> 1) + '$' + ++counter + '$__';
-  }
-  var createPrivateSymbol,
-      deletePrivate,
-      getPrivate,
-      hasPrivate,
-      isPrivateSymbol,
-      setPrivate;
-  if (hasNativeWeakMap) {
-    isPrivateSymbol = function(s) {
-      return false;
-    };
-    createPrivateSymbol = function() {
-      return new $WeakMap();
-    };
-    hasPrivate = function(obj, sym) {
-      return sym.has(obj);
-    };
-    deletePrivate = function(obj, sym) {
-      return sym.delete(obj);
-    };
-    setPrivate = function(obj, sym, val) {
-      sym.set(obj, val);
-    };
-    getPrivate = function(obj, sym) {
-      return sym.get(obj);
-    };
-  } else {
-    var privateNames = $create(null);
-    isPrivateSymbol = function(s) {
-      return privateNames[s];
-    };
-    createPrivateSymbol = function() {
-      var s = hasNativeSymbol ? $Symbol() : newUniqueString();
-      privateNames[s] = true;
-      return s;
-    };
-    hasPrivate = function(obj, sym) {
-      return hasOwnProperty.call(obj, sym);
-    };
-    deletePrivate = function(obj, sym) {
-      if (!hasPrivate(obj, sym)) {
-        return false;
-      }
-      delete obj[sym];
-      return true;
-    };
-    setPrivate = function(obj, sym, val) {
-      obj[sym] = val;
-    };
-    getPrivate = function(obj, sym) {
-      var val = obj[sym];
-      if (val === undefined)
-        return undefined;
-      return hasOwnProperty.call(obj, sym) ? val : undefined;
-    };
-  }
-  (function() {
-    function nonEnum(value) {
-      return {
-        configurable: true,
-        enumerable: false,
-        value: value,
-        writable: true
-      };
-    }
-    var method = nonEnum;
-    var symbolInternalProperty = newUniqueString();
-    var symbolDescriptionProperty = newUniqueString();
-    var symbolDataProperty = newUniqueString();
-    var symbolValues = $create(null);
-    var SymbolImpl = function Symbol(description) {
-      var value = new SymbolValue(description);
-      if (!(this instanceof SymbolImpl))
-        return value;
-      throw new TypeError('Symbol cannot be new\'ed');
-    };
-    $defineProperty(SymbolImpl.prototype, 'constructor', nonEnum(SymbolImpl));
-    $defineProperty(SymbolImpl.prototype, 'toString', method(function() {
-      var symbolValue = this[symbolDataProperty];
-      return symbolValue[symbolInternalProperty];
-    }));
-    $defineProperty(SymbolImpl.prototype, 'valueOf', method(function() {
-      var symbolValue = this[symbolDataProperty];
-      if (!symbolValue)
-        throw TypeError('Conversion from symbol to string');
-      return symbolValue[symbolInternalProperty];
-    }));
-    function SymbolValue(description) {
-      var key = newUniqueString();
-      $defineProperty(this, symbolDataProperty, {value: this});
-      $defineProperty(this, symbolInternalProperty, {value: key});
-      $defineProperty(this, symbolDescriptionProperty, {value: description});
-      $freeze(this);
-      symbolValues[key] = this;
-    }
-    $defineProperty(SymbolValue.prototype, 'constructor', nonEnum(SymbolImpl));
-    $defineProperty(SymbolValue.prototype, 'toString', {
-      value: SymbolImpl.prototype.toString,
-      enumerable: false
-    });
-    $defineProperty(SymbolValue.prototype, 'valueOf', {
-      value: SymbolImpl.prototype.valueOf,
-      enumerable: false
-    });
-    $freeze(SymbolValue.prototype);
-    function isSymbolString(s) {
-      return symbolValues[s] || isPrivateSymbol(s);
-    }
-    function removeSymbolKeys(array) {
-      var rv = [];
-      for (var i = 0; i < array.length; i++) {
-        if (!isSymbolString(array[i])) {
-          rv.push(array[i]);
-        }
-      }
-      return rv;
-    }
-    function getOwnPropertyNames(object) {
-      return removeSymbolKeys($getOwnPropertyNames(object));
-    }
-    function keys(object) {
-      return removeSymbolKeys($keys(object));
-    }
-    var getOwnPropertySymbolsEmulate = function getOwnPropertySymbols(object) {
-      var rv = [];
-      var names = $getOwnPropertyNames(object);
-      for (var i = 0; i < names.length; i++) {
-        var symbol = symbolValues[names[i]];
-        if (symbol) {
-          rv.push(symbol);
-        }
-      }
-      return rv;
-    };
-    var getOwnPropertySymbolsPrivate = function getOwnPropertySymbols(object) {
-      var rv = [];
-      var symbols = $getOwnPropertySymbols(object);
-      for (var i = 0; i < symbols.length; i++) {
-        var symbol = symbols[i];
-        if (!isPrivateSymbol(symbol)) {
-          rv.push(symbol);
-        }
-      }
-      return rv;
-    };
-    function exportStar(object) {
-      for (var i = 1; i < arguments.length; i++) {
-        var names = $getOwnPropertyNames(arguments[i]);
-        for (var j = 0; j < names.length; j++) {
-          var name = names[j];
-          if (name === '__esModule' || name === 'default' || isSymbolString(name))
-            continue;
-          (function(mod, name) {
-            $defineProperty(object, name, {
-              get: function() {
-                return mod[name];
-              },
-              enumerable: true
-            });
-          })(arguments[i], names[j]);
-        }
-      }
-      return object;
-    }
-    function isObject(x) {
-      return x != null && (typeof x === 'object' || typeof x === 'function');
-    }
-    function toObject(x) {
-      if (x == null)
-        throw $TypeError();
-      return $Object(x);
-    }
-    function checkObjectCoercible(argument) {
-      if (argument == null) {
-        throw new TypeError('Value cannot be converted to an Object');
-      }
-      return argument;
-    }
-    function polyfillSymbol(global) {
-      if (!hasNativeSymbol) {
-        global.Symbol = SymbolImpl;
-        var Object = global.Object;
-        Object.getOwnPropertyNames = getOwnPropertyNames;
-        Object.keys = keys;
-        $defineProperty(Object, 'getOwnPropertySymbols', nonEnum(getOwnPropertySymbolsEmulate));
-      } else if (!hasNativeWeakMap) {
-        $defineProperty(Object, 'getOwnPropertySymbols', nonEnum(getOwnPropertySymbolsPrivate));
-      }
-      if (!global.Symbol.iterator) {
-        global.Symbol.iterator = Symbol('Symbol.iterator');
-      }
-      if (!global.Symbol.observer) {
-        global.Symbol.observer = Symbol('Symbol.observer');
-      }
-    }
-    function hasNativeSymbolFunc() {
-      return hasNativeSymbol;
-    }
-    function setupGlobals(global) {
-      polyfillSymbol(global);
-      global.Reflect = global.Reflect || {};
-      global.Reflect.global = global.Reflect.global || global;
-    }
-    setupGlobals(global);
-    var typeOf = hasNativeSymbol ? function(x) {
-      return typeof x;
-    } : function(x) {
-      return x instanceof SymbolValue ? 'symbol' : typeof x;
-    };
-    global.$traceurRuntime = {
-      checkObjectCoercible: checkObjectCoercible,
-      createPrivateSymbol: createPrivateSymbol,
-      deletePrivate: deletePrivate,
-      exportStar: exportStar,
-      getPrivate: getPrivate,
-      hasNativeSymbol: hasNativeSymbolFunc,
-      hasPrivate: hasPrivate,
-      isObject: isObject,
-      options: {},
-      setPrivate: setPrivate,
-      setupGlobals: setupGlobals,
-      toObject: toObject,
-      typeof: typeOf
-    };
-  })();
+  setupGlobals(global);
+  var typeOf = function(x) {
+    return typeof x;
+  };
+  global.$traceurRuntime = {
+    options: {},
+    setupGlobals: setupGlobals,
+    typeof: typeOf
+  };
 })(typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this);
 (function() {
   function buildFromEncodedParts(opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_queryData, opt_fragment) {
@@ -597,12 +356,6 @@
     },
     getAnonymousModule: function(func) {
       return new Module(func.call(global), liveModuleSentinel);
-    },
-    setCompilerVersion: function(version) {
-      ModuleStore.compilerVersion = version;
-    },
-    getCompilerVersion: function() {
-      return ModuleStore.compilerVersion;
     }
   };
   var moduleStoreModule = new Module({ModuleStore: ModuleStore});
@@ -612,26 +365,636 @@
     setupGlobals(global);
   };
   $traceurRuntime.ModuleStore = ModuleStore;
+  $traceurRuntime.registerModule = ModuleStore.registerModule.bind(ModuleStore);
+  $traceurRuntime.getModule = ModuleStore.get;
+  $traceurRuntime.setModule = ModuleStore.set;
+  $traceurRuntime.normalizeModuleName = ModuleStore.normalize;
   global.System = {
     register: ModuleStore.register.bind(ModuleStore),
     registerModule: ModuleStore.registerModule.bind(ModuleStore),
     get: ModuleStore.get,
     set: ModuleStore.set,
-    normalize: ModuleStore.normalize,
-    setCompilerVersion: ModuleStore.setCompilerVersion,
-    getCompilerVersion: ModuleStore.getCompilerVersion
+    normalize: ModuleStore.normalize
   };
 })(typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this);
-System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/new-unique-string.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/async.js";
-  if (typeof $traceurRuntime !== 'object') {
-    throw new Error('traceur runtime not found.');
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/new-unique-string.js";
+  var random = Math.random;
+  var counter = Date.now() % 1e9;
+  function newUniqueString() {
+    return '__$' + (random() * 1e9 >>> 1) + '$' + ++counter + '$__';
   }
-  var $__11 = $traceurRuntime,
-      createPrivateSymbol = $__11.createPrivateSymbol,
-      getPrivate = $__11.getPrivate,
-      setPrivate = $__11.setPrivate;
+  var $__default = newUniqueString;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/has-native-symbols.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/has-native-symbols.js";
+  var v = !!Object.getOwnPropertySymbols && typeof Symbol === 'function';
+  function hasNativeSymbol() {
+    return v;
+  }
+  var $__default = hasNativeSymbol;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/symbols.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/symbols.js";
+  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./new-unique-string.js", "traceur-runtime@0.0.94/src/runtime/symbols.js")).default;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./has-native-symbols.js", "traceur-runtime@0.0.94/src/runtime/symbols.js")).default;
+  var $create = Object.create;
+  var $defineProperty = Object.defineProperty;
+  var $freeze = Object.freeze;
+  var $getOwnPropertyNames = Object.getOwnPropertyNames;
+  var $keys = Object.keys;
+  var $TypeError = TypeError;
+  function nonEnum(value) {
+    return {
+      configurable: true,
+      enumerable: false,
+      value: value,
+      writable: true
+    };
+  }
+  var symbolInternalProperty = newUniqueString();
+  var symbolDescriptionProperty = newUniqueString();
+  var symbolDataProperty = newUniqueString();
+  var symbolValues = $create(null);
+  var SymbolImpl = function Symbol(description) {
+    var value = new SymbolValue(description);
+    if (!(this instanceof SymbolImpl))
+      return value;
+    throw new $TypeError('Symbol cannot be new\'ed');
+  };
+  $defineProperty(SymbolImpl.prototype, 'constructor', nonEnum(SymbolImpl));
+  $defineProperty(SymbolImpl.prototype, 'toString', nonEnum(function() {
+    var symbolValue = this[symbolDataProperty];
+    return symbolValue[symbolInternalProperty];
+  }));
+  $defineProperty(SymbolImpl.prototype, 'valueOf', nonEnum(function() {
+    var symbolValue = this[symbolDataProperty];
+    if (!symbolValue)
+      throw $TypeError('Conversion from symbol to string');
+    return symbolValue[symbolInternalProperty];
+  }));
+  function SymbolValue(description) {
+    var key = newUniqueString();
+    $defineProperty(this, symbolDataProperty, {value: this});
+    $defineProperty(this, symbolInternalProperty, {value: key});
+    $defineProperty(this, symbolDescriptionProperty, {value: description});
+    $freeze(this);
+    symbolValues[key] = this;
+  }
+  $defineProperty(SymbolValue.prototype, 'constructor', nonEnum(SymbolImpl));
+  $defineProperty(SymbolValue.prototype, 'toString', {
+    value: SymbolImpl.prototype.toString,
+    enumerable: false
+  });
+  $defineProperty(SymbolValue.prototype, 'valueOf', {
+    value: SymbolImpl.prototype.valueOf,
+    enumerable: false
+  });
+  $freeze(SymbolValue.prototype);
+  function isSymbolString(s) {
+    return symbolValues[s];
+  }
+  function removeSymbolKeys(array) {
+    var rv = [];
+    for (var i = 0; i < array.length; i++) {
+      if (!isSymbolString(array[i])) {
+        rv.push(array[i]);
+      }
+    }
+    return rv;
+  }
+  function getOwnPropertyNames(object) {
+    return removeSymbolKeys($getOwnPropertyNames(object));
+  }
+  function keys(object) {
+    return removeSymbolKeys($keys(object));
+  }
+  function getOwnPropertySymbols(object) {
+    var rv = [];
+    var names = $getOwnPropertyNames(object);
+    for (var i = 0; i < names.length; i++) {
+      var symbol = symbolValues[names[i]];
+      if (symbol) {
+        rv.push(symbol);
+      }
+    }
+    return rv;
+  }
+  function polyfillSymbol(global) {
+    var Object = global.Object;
+    if (!hasNativeSymbol()) {
+      global.Symbol = SymbolImpl;
+      Object.getOwnPropertyNames = getOwnPropertyNames;
+      Object.keys = keys;
+      $defineProperty(Object, 'getOwnPropertySymbols', nonEnum(getOwnPropertySymbols));
+    }
+    if (!global.Symbol.iterator) {
+      global.Symbol.iterator = global.Symbol('Symbol.iterator');
+    }
+    if (!global.Symbol.observer) {
+      global.Symbol.observer = global.Symbol('Symbol.observer');
+    }
+  }
+  var g = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this;
+  polyfillSymbol(g);
+  var typeOf = hasNativeSymbol() ? function(x) {
+    return typeof x;
+  } : function(x) {
+    return x instanceof SymbolValue ? 'symbol' : typeof x;
+  };
+  $traceurRuntime.typeof = typeOf;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/classes.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/classes.js";
+  var $Object = Object;
+  var $TypeError = TypeError;
+  var $__1 = Object,
+      create = $__1.create,
+      defineProperties = $__1.defineProperties,
+      defineProperty = $__1.defineProperty,
+      getOwnPropertyDescriptor = $__1.getOwnPropertyDescriptor,
+      getOwnPropertyNames = $__1.getOwnPropertyNames,
+      getOwnPropertySymbols = $__1.getOwnPropertySymbols,
+      getPrototypeOf = $__1.getPrototypeOf;
+  function superDescriptor(homeObject, name) {
+    var proto = getPrototypeOf(homeObject);
+    do {
+      var result = getOwnPropertyDescriptor(proto, name);
+      if (result)
+        return result;
+      proto = getPrototypeOf(proto);
+    } while (proto);
+    return undefined;
+  }
+  function superConstructor(ctor) {
+    return ctor.__proto__;
+  }
+  function superGet(self, homeObject, name) {
+    var descriptor = superDescriptor(homeObject, name);
+    if (descriptor) {
+      var value = descriptor.value;
+      if (value)
+        return value;
+      if (!descriptor.get)
+        return value;
+      return descriptor.get.call(self);
+    }
+    return undefined;
+  }
+  function superSet(self, homeObject, name, value) {
+    var descriptor = superDescriptor(homeObject, name);
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(self, value);
+      return value;
+    }
+    throw $TypeError(("super has no setter '" + name + "'."));
+  }
+  function forEachPropertyKey(object, f) {
+    getOwnPropertyNames(object).forEach(f);
+    if (getOwnPropertySymbols) {
+      getOwnPropertySymbols(object).forEach(f);
+    }
+  }
+  function getDescriptors(object) {
+    var descriptors = {};
+    forEachPropertyKey(object, function(key) {
+      descriptors[key] = getOwnPropertyDescriptor(object, key);
+      descriptors[key].enumerable = false;
+    });
+    return descriptors;
+  }
+  var nonEnum = {enumerable: false};
+  function makePropertiesNonEnumerable(object) {
+    forEachPropertyKey(object, function(key) {
+      defineProperty(object, key, nonEnum);
+    });
+  }
+  function createClass(ctor, object, staticObject, superClass) {
+    defineProperty(object, 'constructor', {
+      value: ctor,
+      configurable: true,
+      enumerable: false,
+      writable: true
+    });
+    if (arguments.length > 3) {
+      if (typeof superClass === 'function')
+        ctor.__proto__ = superClass;
+      ctor.prototype = create(getProtoParent(superClass), getDescriptors(object));
+    } else {
+      makePropertiesNonEnumerable(object);
+      ctor.prototype = object;
+    }
+    defineProperty(ctor, 'prototype', {
+      configurable: false,
+      writable: false
+    });
+    return defineProperties(ctor, getDescriptors(staticObject));
+  }
+  function getProtoParent(superClass) {
+    if (typeof superClass === 'function') {
+      var prototype = superClass.prototype;
+      if ($Object(prototype) === prototype || prototype === null)
+        return superClass.prototype;
+      throw new $TypeError('super prototype must be an Object or null');
+    }
+    if (superClass === null)
+      return null;
+    throw new $TypeError(("Super expression must either be null or a function, not " + typeof superClass + "."));
+  }
+  $traceurRuntime.createClass = createClass;
+  $traceurRuntime.superConstructor = superConstructor;
+  $traceurRuntime.superGet = superGet;
+  $traceurRuntime.superSet = superSet;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/exportStar.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/exportStar.js";
+  var $__1 = Object,
+      defineProperty = $__1.defineProperty,
+      getOwnPropertyNames = $__1.getOwnPropertyNames;
+  function exportStar(object) {
+    var $__2 = arguments,
+        $__3 = function(i) {
+          var mod = $__2[i];
+          var names = getOwnPropertyNames(mod);
+          var $__5 = function(j) {
+            var name = names[j];
+            if (name === '__esModule' || name === 'default') {
+              return 0;
+            }
+            defineProperty(object, name, {
+              get: function() {
+                return mod[name];
+              },
+              enumerable: true
+            });
+          },
+              $__6;
+          $__4: for (var j = 0; j < names.length; j++) {
+            $__6 = $__5(j);
+            switch ($__6) {
+              case 0:
+                continue $__4;
+            }
+          }
+        };
+    for (var i = 1; i < arguments.length; i++) {
+      $__3(i);
+    }
+    return object;
+  }
+  $traceurRuntime.exportStar = exportStar;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/private-symbol.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/private-symbol.js";
+  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./new-unique-string.js", "traceur-runtime@0.0.94/src/runtime/private-symbol.js")).default;
+  var $Symbol = typeof Symbol === 'function' ? Symbol : undefined;
+  var $getOwnPropertySymbols = Object.getOwnPropertySymbols;
+  var $create = Object.create;
+  var privateNames = $create(null);
+  function isPrivateSymbol(s) {
+    return privateNames[s];
+  }
+  ;
+  function createPrivateSymbol() {
+    var s = ($Symbol || newUniqueString)();
+    privateNames[s] = true;
+    return s;
+  }
+  ;
+  function hasPrivate(obj, sym) {
+    return hasOwnProperty.call(obj, sym);
+  }
+  ;
+  function deletePrivate(obj, sym) {
+    if (!hasPrivate(obj, sym)) {
+      return false;
+    }
+    delete obj[sym];
+    return true;
+  }
+  ;
+  function setPrivate(obj, sym, val) {
+    obj[sym] = val;
+  }
+  ;
+  function getPrivate(obj, sym) {
+    var val = obj[sym];
+    if (val === undefined)
+      return undefined;
+    return hasOwnProperty.call(obj, sym) ? val : undefined;
+  }
+  ;
+  function init() {
+    if ($getOwnPropertySymbols) {
+      Object.getOwnPropertySymbols = function getOwnPropertySymbols(object) {
+        var rv = [];
+        var symbols = $getOwnPropertySymbols(object);
+        for (var i = 0; i < symbols.length; i++) {
+          var symbol = symbols[i];
+          if (!isPrivateSymbol(symbol)) {
+            rv.push(symbol);
+          }
+        }
+        return rv;
+      };
+    }
+  }
+  return {
+    get isPrivateSymbol() {
+      return isPrivateSymbol;
+    },
+    get createPrivateSymbol() {
+      return createPrivateSymbol;
+    },
+    get hasPrivate() {
+      return hasPrivate;
+    },
+    get deletePrivate() {
+      return deletePrivate;
+    },
+    get setPrivate() {
+      return setPrivate;
+    },
+    get getPrivate() {
+      return getPrivate;
+    },
+    get init() {
+      return init;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/private-weak-map.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/private-weak-map.js";
+  var $WeakMap = typeof WeakMap === 'function' ? WeakMap : undefined;
+  function isPrivateSymbol(s) {
+    return false;
+  }
+  function createPrivateSymbol() {
+    return new $WeakMap();
+  }
+  function hasPrivate(obj, sym) {
+    return sym.has(obj);
+  }
+  function deletePrivate(obj, sym) {
+    return sym.delete(obj);
+  }
+  function setPrivate(obj, sym, val) {
+    sym.set(obj, val);
+  }
+  function getPrivate(obj, sym) {
+    return sym.get(obj);
+  }
+  function init() {}
+  return {
+    get isPrivateSymbol() {
+      return isPrivateSymbol;
+    },
+    get createPrivateSymbol() {
+      return createPrivateSymbol;
+    },
+    get hasPrivate() {
+      return hasPrivate;
+    },
+    get deletePrivate() {
+      return deletePrivate;
+    },
+    get setPrivate() {
+      return setPrivate;
+    },
+    get getPrivate() {
+      return getPrivate;
+    },
+    get init() {
+      return init;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/private.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/private.js";
+  var sym = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-symbol.js", "traceur-runtime@0.0.94/src/runtime/private.js"));
+  var weak = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-weak-map.js", "traceur-runtime@0.0.94/src/runtime/private.js"));
+  var hasWeakMap = typeof WeakMap === 'function';
+  var m = hasWeakMap ? weak : sym;
+  var isPrivateSymbol = m.isPrivateSymbol;
+  var createPrivateSymbol = m.createPrivateSymbol;
+  var hasPrivate = m.hasPrivate;
+  var deletePrivate = m.deletePrivate;
+  var setPrivate = m.setPrivate;
+  var getPrivate = m.getPrivate;
+  m.init();
+  return {
+    get isPrivateSymbol() {
+      return isPrivateSymbol;
+    },
+    get createPrivateSymbol() {
+      return createPrivateSymbol;
+    },
+    get hasPrivate() {
+      return hasPrivate;
+    },
+    get deletePrivate() {
+      return deletePrivate;
+    },
+    get setPrivate() {
+      return setPrivate;
+    },
+    get getPrivate() {
+      return getPrivate;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/properTailCalls.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/properTailCalls.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.94/src/runtime/properTailCalls.js")),
+      getPrivate = $__0.getPrivate,
+      setPrivate = $__0.setPrivate,
+      createPrivateSymbol = $__0.createPrivateSymbol;
+  var $apply = Function.prototype.call.bind(Function.prototype.apply);
+  var CONTINUATION_TYPE = Object.create(null);
+  var isTailRecursiveName = null;
+  function createContinuation(operand, thisArg, argsArray) {
+    return [CONTINUATION_TYPE, operand, thisArg, argsArray];
+  }
+  function isContinuation(object) {
+    return object && object[0] === CONTINUATION_TYPE;
+  }
+  function $bind(operand, thisArg, args) {
+    var argArray = [thisArg];
+    for (var i = 0; i < args.length; i++) {
+      argArray[i + 1] = args[i];
+    }
+    var func = $apply(Function.prototype.bind, operand, argArray);
+    return func;
+  }
+  function $construct(func, argArray) {
+    var object = new ($bind(func, null, argArray));
+    return object;
+  }
+  function isTailRecursive(func) {
+    return !!getPrivate(func, isTailRecursiveName);
+  }
+  function tailCall(func, thisArg, argArray) {
+    var continuation = argArray[0];
+    if (isContinuation(continuation)) {
+      continuation = $apply(func, thisArg, continuation[3]);
+      return continuation;
+    }
+    continuation = createContinuation(func, thisArg, argArray);
+    while (true) {
+      if (isTailRecursive(func)) {
+        continuation = $apply(func, continuation[2], [continuation]);
+      } else {
+        continuation = $apply(func, continuation[2], continuation[3]);
+      }
+      if (!isContinuation(continuation)) {
+        return continuation;
+      }
+      func = continuation[1];
+    }
+  }
+  function construct() {
+    var object;
+    if (isTailRecursive(this)) {
+      object = $construct(this, [createContinuation(null, null, arguments)]);
+    } else {
+      object = $construct(this, arguments);
+    }
+    return object;
+  }
+  function setupProperTailCalls() {
+    isTailRecursiveName = createPrivateSymbol();
+    Function.prototype.call = initTailRecursiveFunction(function call(thisArg) {
+      var result = tailCall(function(thisArg) {
+        var argArray = [];
+        for (var i = 1; i < arguments.length; ++i) {
+          argArray[i - 1] = arguments[i];
+        }
+        var continuation = createContinuation(this, thisArg, argArray);
+        return continuation;
+      }, this, arguments);
+      return result;
+    });
+    Function.prototype.apply = initTailRecursiveFunction(function apply(thisArg, argArray) {
+      var result = tailCall(function(thisArg, argArray) {
+        var continuation = createContinuation(this, thisArg, argArray);
+        return continuation;
+      }, this, arguments);
+      return result;
+    });
+  }
+  function initTailRecursiveFunction(func) {
+    if (isTailRecursiveName === null) {
+      setupProperTailCalls();
+    }
+    setPrivate(func, isTailRecursiveName, true);
+    return func;
+  }
+  $traceurRuntime.initTailRecursiveFunction = initTailRecursiveFunction;
+  $traceurRuntime.call = tailCall;
+  $traceurRuntime.continuation = createContinuation;
+  $traceurRuntime.construct = construct;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/relativeRequire.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/relativeRequire.js";
+  var path;
+  function relativeRequire(callerPath, requiredPath) {
+    path = path || typeof require !== 'undefined' && require('path');
+    function isDirectory(path) {
+      return path.slice(-1) === '/';
+    }
+    function isAbsolute(path) {
+      return path[0] === '/';
+    }
+    function isRelative(path) {
+      return path[0] === '.';
+    }
+    if (isDirectory(requiredPath) || isAbsolute(requiredPath))
+      return;
+    return isRelative(requiredPath) ? require(path.resolve(path.dirname(callerPath), requiredPath)) : require(requiredPath);
+  }
+  $traceurRuntime.require = relativeRequire;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/checkObjectCoercible.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/checkObjectCoercible.js";
+  var $TypeError = TypeError;
+  function checkObjectCoercible(v) {
+    if (v === null || v === undefined) {
+      throw new $TypeError('Value cannot be converted to an Object');
+    }
+    return v;
+  }
+  var $__default = checkObjectCoercible;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/spread.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/spread.js";
+  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./checkObjectCoercible.js", "traceur-runtime@0.0.94/src/runtime/spread.js")).default;
+  function spread() {
+    var rv = [],
+        j = 0,
+        iterResult;
+    for (var i = 0; i < arguments.length; i++) {
+      var valueToSpread = checkObjectCoercible(arguments[i]);
+      if (typeof valueToSpread[Symbol.iterator] !== 'function') {
+        throw new TypeError('Cannot spread non-iterable object.');
+      }
+      var iter = valueToSpread[Symbol.iterator]();
+      while (!(iterResult = iter.next()).done) {
+        rv[j++] = iterResult.value;
+      }
+    }
+    return rv;
+  }
+  $traceurRuntime.spread = spread;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/destructuring.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/destructuring.js";
+  function iteratorToArray(iter) {
+    var rv = [];
+    var i = 0;
+    var tmp;
+    while (!(tmp = iter.next()).done) {
+      rv[i++] = tmp.value;
+    }
+    return rv;
+  }
+  $traceurRuntime.iteratorToArray = iteratorToArray;
+  return {};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/async.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/async.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.94/src/runtime/async.js")),
+      createPrivateSymbol = $__0.createPrivateSymbol,
+      getPrivate = $__0.getPrivate,
+      setPrivate = $__0.setPrivate;
   var $__12 = Object,
       create = $__12.create,
       defineProperty = $__12.defineProperty;
@@ -643,9 +1006,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], functio
   defineProperty(AsyncGeneratorFunctionPrototype, 'constructor', {enumerable: false});
   var AsyncGeneratorContext = function() {
     function AsyncGeneratorContext(observer) {
-      var $__2 = this;
+      var $__3 = this;
       this.decoratedObserver = $traceurRuntime.createDecoratedGenerator(observer, function() {
-        $__2.done = true;
+        $__3.done = true;
       });
       this.done = false;
       this.inReturn = false;
@@ -727,8 +1090,8 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], functio
   }
   function createAsyncGeneratorInstance(observe, functionObject) {
     for (var args = [],
-        $__10 = 2; $__10 < arguments.length; $__10++)
-      args[$__10 - 2] = arguments[$__10];
+        $__11 = 2; $__11 < arguments.length; $__11++)
+      args[$__11 - 2] = arguments[$__11];
     var object = create(functionObject.prototype);
     setPrivate(object, observeName, observe);
     return object;
@@ -784,13 +1147,13 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], functio
     var decoratedObserver = createDecoratedGenerator(observer, function() {
       return done = true;
     });
-    var $__6 = true;
-    var $__7 = false;
-    var $__8 = undefined;
+    var $__7 = true;
+    var $__8 = false;
+    var $__9 = undefined;
     try {
-      for (var $__4 = void 0,
-          $__3 = (this)[Symbol.iterator](); !($__6 = ($__4 = $__3.next()).done); $__6 = true) {
-        var value = $__4.value;
+      for (var $__5 = void 0,
+          $__4 = (this)[Symbol.iterator](); !($__7 = ($__5 = $__4.next()).done); $__7 = true) {
+        var value = $__5.value;
         {
           decoratedObserver.next(value);
           if (done) {
@@ -798,17 +1161,17 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], functio
           }
         }
       }
-    } catch ($__9) {
-      $__7 = true;
-      $__8 = $__9;
+    } catch ($__10) {
+      $__8 = true;
+      $__9 = $__10;
     } finally {
       try {
-        if (!$__6 && $__3.return != null) {
-          $__3.return();
+        if (!$__7 && $__4.return != null) {
+          $__4.return();
         }
       } finally {
-        if ($__7) {
-          throw $__8;
+        if ($__8) {
+          throw $__9;
         }
       }
     }
@@ -823,134 +1186,14 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/async.js", [], functio
   $traceurRuntime.createDecoratedGenerator = createDecoratedGenerator;
   return {};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/classes.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/generators.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/classes.js";
-  var $Object = Object;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/generators.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.94/src/runtime/generators.js")),
+      createPrivateSymbol = $__0.createPrivateSymbol,
+      getPrivate = $__0.getPrivate,
+      setPrivate = $__0.setPrivate;
   var $TypeError = TypeError;
-  var $__1 = Object,
-      create = $__1.create,
-      defineProperties = $__1.defineProperties,
-      defineProperty = $__1.defineProperty,
-      getOwnPropertyDescriptor = $__1.getOwnPropertyDescriptor,
-      getOwnPropertyNames = $__1.getOwnPropertyNames,
-      getOwnPropertySymbols = $__1.getOwnPropertySymbols,
-      getPrototypeOf = $__1.getPrototypeOf;
-  function superDescriptor(homeObject, name) {
-    var proto = getPrototypeOf(homeObject);
-    do {
-      var result = getOwnPropertyDescriptor(proto, name);
-      if (result)
-        return result;
-      proto = getPrototypeOf(proto);
-    } while (proto);
-    return undefined;
-  }
-  function superConstructor(ctor) {
-    return ctor.__proto__;
-  }
-  function superGet(self, homeObject, name) {
-    var descriptor = superDescriptor(homeObject, name);
-    if (descriptor) {
-      var value = descriptor.value;
-      if (value)
-        return value;
-      if (!descriptor.get)
-        return value;
-      return descriptor.get.call(self);
-    }
-    return undefined;
-  }
-  function superSet(self, homeObject, name, value) {
-    var descriptor = superDescriptor(homeObject, name);
-    if (descriptor && descriptor.set) {
-      descriptor.set.call(self, value);
-      return value;
-    }
-    throw $TypeError(("super has no setter '" + name + "'."));
-  }
-  function forEachPropertyKey(object, f) {
-    getOwnPropertyNames(object).forEach(f);
-    getOwnPropertySymbols(object).forEach(f);
-  }
-  function getDescriptors(object) {
-    var descriptors = {};
-    forEachPropertyKey(object, function(key) {
-      descriptors[key] = getOwnPropertyDescriptor(object, key);
-      descriptors[key].enumerable = false;
-    });
-    return descriptors;
-  }
-  var nonEnum = {enumerable: false};
-  function makePropertiesNonEnumerable(object) {
-    forEachPropertyKey(object, function(key) {
-      defineProperty(object, key, nonEnum);
-    });
-  }
-  function createClass(ctor, object, staticObject, superClass) {
-    defineProperty(object, 'constructor', {
-      value: ctor,
-      configurable: true,
-      enumerable: false,
-      writable: true
-    });
-    if (arguments.length > 3) {
-      if (typeof superClass === 'function')
-        ctor.__proto__ = superClass;
-      ctor.prototype = create(getProtoParent(superClass), getDescriptors(object));
-    } else {
-      makePropertiesNonEnumerable(object);
-      ctor.prototype = object;
-    }
-    defineProperty(ctor, 'prototype', {
-      configurable: false,
-      writable: false
-    });
-    return defineProperties(ctor, getDescriptors(staticObject));
-  }
-  function getProtoParent(superClass) {
-    if (typeof superClass === 'function') {
-      var prototype = superClass.prototype;
-      if ($Object(prototype) === prototype || prototype === null)
-        return superClass.prototype;
-      throw new $TypeError('super prototype must be an Object or null');
-    }
-    if (superClass === null)
-      return null;
-    throw new $TypeError(("Super expression must either be null or a function, not " + typeof superClass + "."));
-  }
-  $traceurRuntime.createClass = createClass;
-  $traceurRuntime.superConstructor = superConstructor;
-  $traceurRuntime.superGet = superGet;
-  $traceurRuntime.superSet = superSet;
-  return {};
-});
-System.registerModule("traceur-runtime@0.0.93/src/runtime/destructuring.js", [], function() {
-  "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/destructuring.js";
-  function iteratorToArray(iter) {
-    var rv = [];
-    var i = 0;
-    var tmp;
-    while (!(tmp = iter.next()).done) {
-      rv[i++] = tmp.value;
-    }
-    return rv;
-  }
-  $traceurRuntime.iteratorToArray = iteratorToArray;
-  return {};
-});
-System.registerModule("traceur-runtime@0.0.93/src/runtime/generators.js", [], function() {
-  "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/generators.js";
-  if (typeof $traceurRuntime !== 'object') {
-    throw new Error('traceur runtime not found.');
-  }
-  var $TypeError = TypeError;
-  var $__1 = $traceurRuntime,
-      createPrivateSymbol = $__1.createPrivateSymbol,
-      getPrivate = $__1.getPrivate,
-      setPrivate = $__1.setPrivate;
   var $__2 = Object,
       create = $__2.create,
       defineProperties = $__2.defineProperties,
@@ -1238,149 +1481,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/generators.js", [], fu
   $traceurRuntime.createGeneratorInstance = createGeneratorInstance;
   return {};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/proper-tail-calls.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/template.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/proper-tail-calls.js";
-  if (typeof $traceurRuntime !== 'object') {
-    throw new Error('traceur runtime not found.');
-  }
-  var $apply = Function.prototype.call.bind(Function.prototype.apply);
-  var $__1 = $traceurRuntime,
-      getPrivate = $__1.getPrivate,
-      setPrivate = $__1.setPrivate,
-      createPrivateSymbol = $__1.createPrivateSymbol;
-  var CONTINUATION_TYPE = Object.create(null);
-  var isTailRecursiveName = null;
-  function createContinuation(operand, thisArg, argsArray) {
-    return [CONTINUATION_TYPE, operand, thisArg, argsArray];
-  }
-  function isContinuation(object) {
-    return object && object[0] === CONTINUATION_TYPE;
-  }
-  function $bind(operand, thisArg, args) {
-    var argArray = [thisArg];
-    for (var i = 0; i < args.length; i++) {
-      argArray[i + 1] = args[i];
-    }
-    var func = $apply(Function.prototype.bind, operand, argArray);
-    return func;
-  }
-  function $construct(func, argArray) {
-    var object = new ($bind(func, null, argArray));
-    return object;
-  }
-  function isTailRecursive(func) {
-    return !!getPrivate(func, isTailRecursiveName);
-  }
-  function tailCall(func, thisArg, argArray) {
-    var continuation = argArray[0];
-    if (isContinuation(continuation)) {
-      continuation = $apply(func, thisArg, continuation[3]);
-      return continuation;
-    }
-    continuation = createContinuation(func, thisArg, argArray);
-    while (true) {
-      if (isTailRecursive(func)) {
-        continuation = $apply(func, continuation[2], [continuation]);
-      } else {
-        continuation = $apply(func, continuation[2], continuation[3]);
-      }
-      if (!isContinuation(continuation)) {
-        return continuation;
-      }
-      func = continuation[1];
-    }
-  }
-  function construct() {
-    var object;
-    if (isTailRecursive(this)) {
-      object = $construct(this, [createContinuation(null, null, arguments)]);
-    } else {
-      object = $construct(this, arguments);
-    }
-    return object;
-  }
-  function setupProperTailCalls() {
-    isTailRecursiveName = createPrivateSymbol();
-    Function.prototype.call = initTailRecursiveFunction(function call(thisArg) {
-      var result = tailCall(function(thisArg) {
-        var argArray = [];
-        for (var i = 1; i < arguments.length; ++i) {
-          argArray[i - 1] = arguments[i];
-        }
-        var continuation = createContinuation(this, thisArg, argArray);
-        return continuation;
-      }, this, arguments);
-      return result;
-    });
-    Function.prototype.apply = initTailRecursiveFunction(function apply(thisArg, argArray) {
-      var result = tailCall(function(thisArg, argArray) {
-        var continuation = createContinuation(this, thisArg, argArray);
-        return continuation;
-      }, this, arguments);
-      return result;
-    });
-  }
-  function initTailRecursiveFunction(func) {
-    if (isTailRecursiveName === null) {
-      setupProperTailCalls();
-    }
-    setPrivate(func, isTailRecursiveName, true);
-    return func;
-  }
-  $traceurRuntime.initTailRecursiveFunction = initTailRecursiveFunction;
-  $traceurRuntime.call = tailCall;
-  $traceurRuntime.continuation = createContinuation;
-  $traceurRuntime.construct = construct;
-  return {};
-});
-System.registerModule("traceur-runtime@0.0.93/src/runtime/relativeRequire.js", [], function() {
-  "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/relativeRequire.js";
-  var path;
-  function relativeRequire(callerPath, requiredPath) {
-    path = path || typeof require !== 'undefined' && require('path');
-    function isDirectory(path) {
-      return path.slice(-1) === '/';
-    }
-    function isAbsolute(path) {
-      return path[0] === '/';
-    }
-    function isRelative(path) {
-      return path[0] === '.';
-    }
-    if (isDirectory(requiredPath) || isAbsolute(requiredPath))
-      return;
-    return isRelative(requiredPath) ? require(path.resolve(path.dirname(callerPath), requiredPath)) : require(requiredPath);
-  }
-  $traceurRuntime.require = relativeRequire;
-  return {};
-});
-System.registerModule("traceur-runtime@0.0.93/src/runtime/spread.js", [], function() {
-  "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/spread.js";
-  function spread() {
-    var rv = [],
-        j = 0,
-        iterResult;
-    for (var i = 0; i < arguments.length; i++) {
-      var valueToSpread = $traceurRuntime.checkObjectCoercible(arguments[i]);
-      if (typeof valueToSpread[Symbol.iterator] !== 'function') {
-        throw new TypeError('Cannot spread non-iterable object.');
-      }
-      var iter = valueToSpread[Symbol.iterator]();
-      while (!(iterResult = iter.next()).done) {
-        rv[j++] = iterResult.value;
-      }
-    }
-    return rv;
-  }
-  $traceurRuntime.spread = spread;
-  return {};
-});
-System.registerModule("traceur-runtime@0.0.93/src/runtime/template.js", [], function() {
-  "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/template.js";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/template.js";
   var $__1 = Object,
       defineProperty = $__1.defineProperty,
       freeze = $__1.freeze;
@@ -1400,23 +1503,25 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/template.js", [], func
   $traceurRuntime.getTemplateObject = getTemplateObject;
   return {};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/runtime-modules.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/runtime-modules.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/runtime-modules.js";
-  System.get("traceur-runtime@0.0.93/src/runtime/proper-tail-calls.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/relativeRequire.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/spread.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/destructuring.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/classes.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/async.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/generators.js");
-  System.get("traceur-runtime@0.0.93/src/runtime/template.js");
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/runtime-modules.js";
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./symbols.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./classes.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./exportStar.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./properTailCalls.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./relativeRequire.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./spread.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./destructuring.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./template.js", "traceur-runtime@0.0.94/src/runtime/runtime-modules.js"));
   return {};
 });
-System.get("traceur-runtime@0.0.93/src/runtime/runtime-modules.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/frozen-data.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/runtime-modules.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/frozen-data.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/frozen-data.js";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/frozen-data.js";
   function findIndex(arr, key) {
     for (var i = 0; i < arr.length; i += 2) {
       if (arr[i] === key) {
@@ -1464,16 +1569,23 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/frozen-data.js", [], f
     }
   };
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/utils.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/utils.js";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/utils.js";
   var $ceil = Math.ceil;
   var $floor = Math.floor;
   var $isFinite = isFinite;
   var $isNaN = isNaN;
   var $pow = Math.pow;
   var $min = Math.min;
-  var toObject = $traceurRuntime.toObject;
+  var $TypeError = TypeError;
+  var $Object = Object;
+  function toObject(x) {
+    if (x == null) {
+      throw $TypeError();
+    }
+    return $Object(x);
+  }
   function toUint32(x) {
     return x >>> 0;
   }
@@ -1624,26 +1736,26 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js", [
     }
   };
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Map.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Map.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
-      isObject = $__0.isObject,
-      registerPolyfill = $__0.registerPolyfill;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/frozen-data.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Map.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Map.js")),
+      createPrivateSymbol = $__0.createPrivateSymbol,
+      getPrivate = $__0.getPrivate,
+      setPrivate = $__0.setPrivate;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Map.js")),
       deleteFrozen = $__1.deleteFrozen,
       getFrozen = $__1.getFrozen,
       setFrozen = $__1.setFrozen;
-  var $__11 = $traceurRuntime,
-      createPrivateSymbol = $__11.createPrivateSymbol,
-      getPrivate = $__11.getPrivate,
-      hasNativeSymbol = $__11.hasNativeSymbol,
-      setPrivate = $__11.setPrivate;
-  var $__12 = Object,
-      defineProperty = $__12.defineProperty,
-      getOwnPropertyDescriptor = $__12.getOwnPropertyDescriptor,
-      hasOwnProperty = $__12.hasOwnProperty,
-      isExtensible = $__12.isExtensible;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Map.js")),
+      isObject = $__2.isObject,
+      registerPolyfill = $__2.registerPolyfill;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Map.js")).default;
+  var $__13 = Object,
+      defineProperty = $__13.defineProperty,
+      getOwnPropertyDescriptor = $__13.getOwnPropertyDescriptor,
+      hasOwnProperty = $__13.hasOwnProperty,
+      isExtensible = $__13.isExtensible;
   var deletedSentinel = {};
   var counter = 1;
   var hashCodeName = createPrivateSymbol();
@@ -1684,8 +1796,8 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
   }
   var Map = function() {
     function Map() {
-      var $__14,
-          $__15;
+      var $__15,
+          $__16;
       var iterable = arguments[0];
       if (!isObject(this))
         throw new TypeError('Map called on incompatible type');
@@ -1694,30 +1806,30 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
       }
       initMap(this);
       if (iterable !== null && iterable !== undefined) {
-        var $__7 = true;
-        var $__8 = false;
-        var $__9 = undefined;
+        var $__9 = true;
+        var $__10 = false;
+        var $__11 = undefined;
         try {
-          for (var $__5 = void 0,
-              $__4 = (iterable)[Symbol.iterator](); !($__7 = ($__5 = $__4.next()).done); $__7 = true) {
-            var $__13 = $__5.value,
-                key = ($__14 = $__13[Symbol.iterator](), ($__15 = $__14.next()).done ? void 0 : $__15.value),
-                value = ($__15 = $__14.next()).done ? void 0 : $__15.value;
+          for (var $__7 = void 0,
+              $__6 = (iterable)[Symbol.iterator](); !($__9 = ($__7 = $__6.next()).done); $__9 = true) {
+            var $__14 = $__7.value,
+                key = ($__15 = $__14[Symbol.iterator](), ($__16 = $__15.next()).done ? void 0 : $__16.value),
+                value = ($__16 = $__15.next()).done ? void 0 : $__16.value;
             {
               this.set(key, value);
             }
           }
-        } catch ($__10) {
-          $__8 = true;
-          $__9 = $__10;
+        } catch ($__12) {
+          $__10 = true;
+          $__11 = $__12;
         } finally {
           try {
-            if (!$__7 && $__4.return != null) {
-              $__4.return();
+            if (!$__9 && $__6.return != null) {
+              $__6.return();
             }
           } finally {
-            if ($__8) {
-              throw $__9;
+            if ($__10) {
+              throw $__11;
             }
           }
         }
@@ -1794,7 +1906,7 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
           callbackFn.call(thisArg, value, key, this);
         }
       },
-      entries: $traceurRuntime.initGeneratorFunction(function $__16() {
+      entries: $traceurRuntime.initGeneratorFunction(function $__17() {
         var i,
             key,
             value;
@@ -1830,9 +1942,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
               default:
                 return $ctx.end();
             }
-        }, $__16, this);
+        }, $__17, this);
       }),
-      keys: $traceurRuntime.initGeneratorFunction(function $__17() {
+      keys: $traceurRuntime.initGeneratorFunction(function $__18() {
         var i,
             key,
             value;
@@ -1868,9 +1980,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
               default:
                 return $ctx.end();
             }
-        }, $__17, this);
+        }, $__18, this);
       }),
-      values: $traceurRuntime.initGeneratorFunction(function $__18() {
+      values: $traceurRuntime.initGeneratorFunction(function $__19() {
         var i,
             key,
             value;
@@ -1906,7 +2018,7 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
               default:
                 return $ctx.end();
             }
-        }, $__18, this);
+        }, $__19, this);
       })
     }, {});
   }();
@@ -1916,10 +2028,10 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
     value: Map.prototype.entries
   });
   function needsPolyfill(global) {
-    var $__13 = global,
-        Map = $__13.Map,
-        Symbol = $__13.Symbol;
-    if (!Map || !$traceurRuntime.hasNativeSymbol() || !Map.prototype[Symbol.iterator] || !Map.prototype.entries) {
+    var $__14 = global,
+        Map = $__14.Map,
+        Symbol = $__14.Symbol;
+    if (!Map || !hasNativeSymbol() || !Map.prototype[Symbol.iterator] || !Map.prototype.entries) {
       return true;
     }
     try {
@@ -1943,14 +2055,15 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js", [],
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Map.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Set.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Set.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Set.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Set.js")),
       isObject = $__0.isObject,
       registerPolyfill = $__0.registerPolyfill;
-  var Map = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Map.js").Map;
+  var Map = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./Map.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Set.js")).Map;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Set.js")).default;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var Set = function() {
     function Set() {
@@ -1962,28 +2075,28 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js", [],
       }
       this.map_ = new Map();
       if (iterable !== null && iterable !== undefined) {
-        var $__8 = true;
-        var $__9 = false;
-        var $__10 = undefined;
+        var $__9 = true;
+        var $__10 = false;
+        var $__11 = undefined;
         try {
-          for (var $__6 = void 0,
-              $__5 = (iterable)[Symbol.iterator](); !($__8 = ($__6 = $__5.next()).done); $__8 = true) {
-            var item = $__6.value;
+          for (var $__7 = void 0,
+              $__6 = (iterable)[Symbol.iterator](); !($__9 = ($__7 = $__6.next()).done); $__9 = true) {
+            var item = $__7.value;
             {
               this.add(item);
             }
           }
-        } catch ($__11) {
-          $__9 = true;
-          $__10 = $__11;
+        } catch ($__12) {
+          $__10 = true;
+          $__11 = $__12;
         } finally {
           try {
-            if (!$__8 && $__5.return != null) {
-              $__5.return();
+            if (!$__9 && $__6.return != null) {
+              $__6.return();
             }
           } finally {
-            if ($__9) {
-              throw $__10;
+            if ($__10) {
+              throw $__11;
             }
           }
         }
@@ -2008,72 +2121,72 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js", [],
       },
       forEach: function(callbackFn) {
         var thisArg = arguments[1];
-        var $__4 = this;
+        var $__5 = this;
         return this.map_.forEach(function(value, key) {
-          callbackFn.call(thisArg, key, key, $__4);
+          callbackFn.call(thisArg, key, key, $__5);
         });
       },
-      values: $traceurRuntime.initGeneratorFunction(function $__14() {
-        var $__15,
-            $__16;
+      values: $traceurRuntime.initGeneratorFunction(function $__15() {
+        var $__16,
+            $__17;
         return $traceurRuntime.createGeneratorInstance(function($ctx) {
           while (true)
             switch ($ctx.state) {
               case 0:
-                $__15 = $ctx.wrapYieldStar(this.map_.keys()[Symbol.iterator]());
+                $__16 = $ctx.wrapYieldStar(this.map_.keys()[Symbol.iterator]());
                 $ctx.sent = void 0;
                 $ctx.action = 'next';
                 $ctx.state = 12;
                 break;
               case 12:
-                $__16 = $__15[$ctx.action]($ctx.sentIgnoreThrow);
+                $__17 = $__16[$ctx.action]($ctx.sentIgnoreThrow);
                 $ctx.state = 9;
                 break;
               case 9:
-                $ctx.state = ($__16.done) ? 3 : 2;
+                $ctx.state = ($__17.done) ? 3 : 2;
                 break;
               case 3:
-                $ctx.sent = $__16.value;
+                $ctx.sent = $__17.value;
                 $ctx.state = -2;
                 break;
               case 2:
                 $ctx.state = 12;
-                return $__16.value;
+                return $__17.value;
               default:
                 return $ctx.end();
             }
-        }, $__14, this);
+        }, $__15, this);
       }),
-      entries: $traceurRuntime.initGeneratorFunction(function $__17() {
-        var $__18,
-            $__19;
+      entries: $traceurRuntime.initGeneratorFunction(function $__18() {
+        var $__19,
+            $__20;
         return $traceurRuntime.createGeneratorInstance(function($ctx) {
           while (true)
             switch ($ctx.state) {
               case 0:
-                $__18 = $ctx.wrapYieldStar(this.map_.entries()[Symbol.iterator]());
+                $__19 = $ctx.wrapYieldStar(this.map_.entries()[Symbol.iterator]());
                 $ctx.sent = void 0;
                 $ctx.action = 'next';
                 $ctx.state = 12;
                 break;
               case 12:
-                $__19 = $__18[$ctx.action]($ctx.sentIgnoreThrow);
+                $__20 = $__19[$ctx.action]($ctx.sentIgnoreThrow);
                 $ctx.state = 9;
                 break;
               case 9:
-                $ctx.state = ($__19.done) ? 3 : 2;
+                $ctx.state = ($__20.done) ? 3 : 2;
                 break;
               case 3:
-                $ctx.sent = $__19.value;
+                $ctx.sent = $__20.value;
                 $ctx.state = -2;
                 break;
               case 2:
                 $ctx.state = 12;
-                return $__19.value;
+                return $__20.value;
               default:
                 return $ctx.end();
             }
-        }, $__17, this);
+        }, $__18, this);
       })
     }, {});
   }();
@@ -2088,10 +2201,10 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js", [],
     value: Set.prototype.values
   });
   function needsPolyfill(global) {
-    var $__13 = global,
-        Set = $__13.Set,
-        Symbol = $__13.Symbol;
-    if (!Set || !$traceurRuntime.hasNativeSymbol() || !Set.prototype[Symbol.iterator] || !Set.prototype.values) {
+    var $__14 = global,
+        Set = $__14.Set,
+        Symbol = $__14.Symbol;
+    if (!Set || !hasNativeSymbol() || !Set.prototype[Symbol.iterator] || !Set.prototype.values) {
       return true;
     }
     try {
@@ -2115,10 +2228,10 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js", [],
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Set.js" + '');
-System.registerModule("traceur-runtime@0.0.93/node_modules/rsvp/lib/rsvp/asap.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Set.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/node_modules/rsvp/lib/rsvp/asap.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/node_modules/rsvp/lib/rsvp/asap.js";
+  var __moduleName = "traceur-runtime@0.0.94/node_modules/rsvp/lib/rsvp/asap.js";
   var len = 0;
   function asap(callback, arg) {
     queue[len] = callback;
@@ -2183,11 +2296,17 @@ System.registerModule("traceur-runtime@0.0.93/node_modules/rsvp/lib/rsvp/asap.js
       return $__default;
     }};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js";
-  var async = System.get("traceur-runtime@0.0.93/node_modules/rsvp/lib/rsvp/asap.js").default;
-  var registerPolyfill = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js").registerPolyfill;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js";
+  var async = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../../../node_modules/rsvp/lib/rsvp/asap.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js")).default;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js")),
+      isObject = $__1.isObject,
+      registerPolyfill = $__1.registerPolyfill;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js")),
+      createPrivateSymbol = $__2.createPrivateSymbol,
+      getPrivate = $__2.getPrivate,
+      setPrivate = $__2.setPrivate;
   var promiseRaw = {};
   function isPromise(x) {
     return x && typeof x === 'object' && x.status_ !== undefined;
@@ -2317,13 +2436,13 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js",
           };
           var count = 0;
           var i = 0;
-          var $__6 = true;
-          var $__7 = false;
-          var $__8 = undefined;
+          var $__7 = true;
+          var $__8 = false;
+          var $__9 = undefined;
           try {
-            for (var $__4 = void 0,
-                $__3 = (values)[Symbol.iterator](); !($__6 = ($__4 = $__3.next()).done); $__6 = true) {
-              var value = $__4.value;
+            for (var $__5 = void 0,
+                $__4 = (values)[Symbol.iterator](); !($__7 = ($__5 = $__4.next()).done); $__7 = true) {
+              var value = $__5.value;
               {
                 var countdownFunction = makeCountdownFunction(i);
                 this.resolve(value).then(countdownFunction, function(r) {
@@ -2333,17 +2452,17 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js",
                 ++count;
               }
             }
-          } catch ($__9) {
-            $__7 = true;
-            $__8 = $__9;
+          } catch ($__10) {
+            $__8 = true;
+            $__9 = $__10;
           } finally {
             try {
-              if (!$__6 && $__3.return != null) {
-                $__3.return();
+              if (!$__7 && $__4.return != null) {
+                $__4.return();
               }
             } finally {
-              if ($__7) {
-                throw $__8;
+              if ($__8) {
+                throw $__9;
               }
             }
           }
@@ -2408,10 +2527,7 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js",
       } catch (e) {}
     }
   }
-  var thenableSymbol = '@@thenable';
-  function isObject(x) {
-    return x && (typeof x === 'object' || typeof x === 'function');
-  }
+  var thenableSymbol = createPrivateSymbol();
   function promiseCoerce(constructor, x) {
     if (!isPromise(x) && isObject(x)) {
       var then;
@@ -2419,16 +2535,16 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js",
         then = x.then;
       } catch (r) {
         var promise = $PromiseReject.call(constructor, r);
-        x[thenableSymbol] = promise;
+        setPrivate(x, thenableSymbol, promise);
         return promise;
       }
       if (typeof then === 'function') {
-        var p = x[thenableSymbol];
+        var p = getPrivate(x, thenableSymbol);
         if (p) {
           return p;
         } else {
           var deferred = getDeferred(constructor);
-          x[thenableSymbol] = deferred.promise;
+          setPrivate(x, thenableSymbol, deferred.promise);
           try {
             then.call(x, deferred.resolve, deferred.reject);
           } catch (r) {
@@ -2454,11 +2570,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js",
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Promise.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/StringIterator.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Promise.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/StringIterator.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/StringIterator.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/StringIterator.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/StringIterator.js")),
       createIteratorResultObject = $__0.createIteratorResultObject,
       isObject = $__0.isObject;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -2521,14 +2637,15 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/StringIterat
       return createStringIterator;
     }};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/String.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/String.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/String.js";
-  var createStringIterator = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/StringIterator.js").createStringIterator;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
-      maybeAddFunctions = $__1.maybeAddFunctions,
-      maybeAddIterator = $__1.maybeAddIterator,
-      registerPolyfill = $__1.registerPolyfill;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/String.js";
+  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../checkObjectCoercible.js", "traceur-runtime@0.0.94/src/runtime/polyfills/String.js")).default;
+  var createStringIterator = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./StringIterator.js", "traceur-runtime@0.0.94/src/runtime/polyfills/String.js")).createStringIterator;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/String.js")),
+      maybeAddFunctions = $__2.maybeAddFunctions,
+      maybeAddIterator = $__2.maybeAddIterator,
+      registerPolyfill = $__2.registerPolyfill;
   var $toString = Object.prototype.toString;
   var $indexOf = String.prototype.indexOf;
   var $lastIndexOf = String.prototype.lastIndexOf;
@@ -2680,7 +2797,7 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/String.js", 
     return String.fromCharCode.apply(null, codeUnits);
   }
   function stringPrototypeIterator() {
-    var o = $traceurRuntime.checkObjectCoercible(this);
+    var o = checkObjectCoercible(this);
     var s = String(o);
     return createStringIterator(s);
   }
@@ -2721,11 +2838,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/String.js", 
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/String.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/ArrayIterator.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/String.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/ArrayIterator.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/ArrayIterator.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/ArrayIterator.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/ArrayIterator.js")),
       toObject = $__0.toObject,
       toUint32 = $__0.toUint32,
       createIteratorResultObject = $__0.createIteratorResultObject;
@@ -2797,14 +2914,14 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/ArrayIterato
     }
   };
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Array.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Array.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Array.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/ArrayIterator.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Array.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./ArrayIterator.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Array.js")),
       entries = $__0.entries,
       keys = $__0.keys,
       jsValues = $__0.values;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Array.js")),
       checkIterable = $__1.checkIterable,
       isCallable = $__1.isCallable,
       isConstructor = $__1.isConstructor,
@@ -2963,11 +3080,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Array.js", [
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Array.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Object.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Array.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Object.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Object.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Object.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Object.js")),
       maybeAddFunctions = $__0.maybeAddFunctions,
       registerPolyfill = $__0.registerPolyfill;
   var $__2 = Object,
@@ -3025,11 +3142,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Object.js", 
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Object.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Number.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Object.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Number.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Number.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Number.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Number.js")),
       isNumber = $__0.isNumber,
       maybeAddConsts = $__0.maybeAddConsts,
       maybeAddFunctions = $__0.maybeAddFunctions,
@@ -3091,10 +3208,10 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Number.js", 
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Number.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/fround.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Number.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/fround.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/fround.js";
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/fround.js";
   var $isFinite = isFinite;
   var $isNaN = isNaN;
   var $__1 = Math,
@@ -3225,11 +3342,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/fround.js", 
       return fround;
     }};
 });
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Math.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/Math.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/Math.js";
-  var jsFround = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/fround.js").fround;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/Math.js";
+  var jsFround = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./fround.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Math.js")).fround;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/Math.js")),
       maybeAddFunctions = $__1.maybeAddFunctions,
       registerPolyfill = $__1.registerPolyfill,
       toUint32 = $__1.toUint32;
@@ -3519,29 +3636,29 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/Math.js", []
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/Math.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakMap.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/Math.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/WeakMap.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/frozen-data.js"),
-      deleteFrozen = $__0.deleteFrozen,
-      getFrozen = $__0.getFrozen,
-      hasFrozen = $__0.hasFrozen,
-      setFrozen = $__0.setFrozen;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
-      isObject = $__1.isObject,
-      registerPolyfill = $__1.registerPolyfill;
-  var $__4 = Object,
-      defineProperty = $__4.defineProperty,
-      getOwnPropertyDescriptor = $__4.getOwnPropertyDescriptor,
-      isExtensible = $__4.isExtensible;
-  var $__5 = $traceurRuntime,
-      createPrivateSymbol = $__5.createPrivateSymbol,
-      deletePrivate = $__5.deletePrivate,
-      getPrivate = $__5.getPrivate,
-      hasNativeSymbol = $__5.hasNativeSymbol,
-      hasPrivate = $__5.hasPrivate,
-      setPrivate = $__5.setPrivate;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js")),
+      createPrivateSymbol = $__0.createPrivateSymbol,
+      deletePrivate = $__0.deletePrivate,
+      getPrivate = $__0.getPrivate,
+      hasPrivate = $__0.hasPrivate,
+      setPrivate = $__0.setPrivate;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js")),
+      deleteFrozen = $__1.deleteFrozen,
+      getFrozen = $__1.getFrozen,
+      hasFrozen = $__1.hasFrozen,
+      setFrozen = $__1.setFrozen;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js")),
+      isObject = $__2.isObject,
+      registerPolyfill = $__2.registerPolyfill;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js")).default;
+  var $__6 = Object,
+      defineProperty = $__6.defineProperty,
+      getOwnPropertyDescriptor = $__6.getOwnPropertyDescriptor,
+      isExtensible = $__6.isExtensible;
   var $TypeError = TypeError;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var sentinel = {};
@@ -3588,9 +3705,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakMap.js",
     }, {});
   }();
   function needsPolyfill(global) {
-    var $__7 = global,
-        WeakMap = $__7.WeakMap,
-        Symbol = $__7.Symbol;
+    var $__8 = global,
+        WeakMap = $__8.WeakMap,
+        Symbol = $__8.Symbol;
     if (!WeakMap || !hasNativeSymbol()) {
       return true;
     }
@@ -3617,27 +3734,27 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakMap.js",
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/WeakMap.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakSet.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/WeakMap.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/WeakSet.js";
-  var $__0 = System.get("traceur-runtime@0.0.93/src/runtime/frozen-data.js"),
-      deleteFrozen = $__0.deleteFrozen,
-      getFrozen = $__0.getFrozen,
-      setFrozen = $__0.setFrozen;
-  var $__1 = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js"),
-      isObject = $__1.isObject,
-      registerPolyfill = $__1.registerPolyfill;
-  var $__4 = Object,
-      defineProperty = $__4.defineProperty,
-      isExtensible = $__4.isExtensible;
-  var $__5 = $traceurRuntime,
-      createPrivateSymbol = $__5.createPrivateSymbol,
-      deletePrivate = $__5.deletePrivate,
-      getPrivate = $__5.getPrivate,
-      hasNativeSymbol = $__5.hasNativeSymbol,
-      hasPrivate = $__5.hasPrivate,
-      setPrivate = $__5.setPrivate;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js")),
+      createPrivateSymbol = $__0.createPrivateSymbol,
+      deletePrivate = $__0.deletePrivate,
+      getPrivate = $__0.getPrivate,
+      hasPrivate = $__0.hasPrivate,
+      setPrivate = $__0.setPrivate;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js")),
+      deleteFrozen = $__1.deleteFrozen,
+      getFrozen = $__1.getFrozen,
+      setFrozen = $__1.setFrozen;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js")),
+      isObject = $__2.isObject,
+      registerPolyfill = $__2.registerPolyfill;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js")).default;
+  var $__6 = Object,
+      defineProperty = $__6.defineProperty,
+      isExtensible = $__6.isExtensible;
   var $TypeError = TypeError;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var WeakSet = function() {
@@ -3675,9 +3792,9 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakSet.js",
     }, {});
   }();
   function needsPolyfill(global) {
-    var $__7 = global,
-        WeakSet = $__7.WeakSet,
-        Symbol = $__7.Symbol;
+    var $__8 = global,
+        WeakSet = $__8.WeakSet,
+        Symbol = $__8.Symbol;
     if (!WeakSet || !hasNativeSymbol()) {
       return true;
     }
@@ -3704,11 +3821,11 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/WeakSet.js",
     }
   };
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/WeakSet.js" + '');
-System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/polyfills.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/WeakSet.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.94/src/runtime/polyfills/polyfills.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.93/src/runtime/polyfills/polyfills.js";
-  var polyfillAll = System.get("traceur-runtime@0.0.93/src/runtime/polyfills/utils.js").polyfillAll;
+  var __moduleName = "traceur-runtime@0.0.94/src/runtime/polyfills/polyfills.js";
+  var polyfillAll = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.94/src/runtime/polyfills/polyfills.js")).polyfillAll;
   polyfillAll(Reflect.global);
   var setupGlobals = $traceurRuntime.setupGlobals;
   $traceurRuntime.setupGlobals = function(global) {
@@ -3717,4 +3834,4 @@ System.registerModule("traceur-runtime@0.0.93/src/runtime/polyfills/polyfills.js
   };
   return {};
 });
-System.get("traceur-runtime@0.0.93/src/runtime/polyfills/polyfills.js" + '');
+$traceurRuntime.getModule("traceur-runtime@0.0.94/src/runtime/polyfills/polyfills.js" + '');
