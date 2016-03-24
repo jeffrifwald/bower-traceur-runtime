@@ -370,9 +370,9 @@
   $traceurRuntime.setModule = ModuleStore.set;
   $traceurRuntime.normalizeModuleName = ModuleStore.normalize;
 })(typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this);
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/new-unique-string.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/new-unique-string.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/new-unique-string.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/new-unique-string.js";
   var random = Math.random;
   var counter = Date.now() % 1e9;
   function newUniqueString() {
@@ -383,9 +383,9 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/new-unique-s
       return $__default;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/has-native-symbols.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/has-native-symbols.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/has-native-symbols.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/has-native-symbols.js";
   var v = !!Object.getOwnPropertySymbols && typeof Symbol === 'function';
   function hasNativeSymbol() {
     return v;
@@ -395,11 +395,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/has-native-s
       return $__default;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/symbols.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/symbols.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/symbols.js";
-  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./new-unique-string.js", "traceur-runtime@0.0.102/src/runtime/symbols.js")).default;
-  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./has-native-symbols.js", "traceur-runtime@0.0.102/src/runtime/symbols.js")).default;
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/symbols.js";
+  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../new-unique-string.js", "traceur-runtime@0.0.103/src/runtime/modules/symbols.js")).default;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.103/src/runtime/modules/symbols.js")).default;
   var $create = Object.create;
   var $defineProperty = Object.defineProperty;
   var $freeze = Object.freeze;
@@ -504,12 +504,28 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/symbols.js",
   } : function(x) {
     return x instanceof SymbolValue ? 'symbol' : typeof x;
   };
-  $traceurRuntime.typeof = typeOf;
+  return {get typeof() {
+      return typeOf;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/typeof.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/typeof.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_symbols_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./symbols.js", "traceur-runtime@0.0.103/src/runtime/modules/typeof.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_symbols_46_js__.typeof;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/symbols.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/symbols.js";
+  var t = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/typeof.js", "traceur-runtime@0.0.103/src/runtime/symbols.js")).default;
+  $traceurRuntime.typeof = t;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/classes.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/createClass.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/classes.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/createClass.js";
   var $Object = Object;
   var $TypeError = TypeError;
   var $__1 = Object,
@@ -518,41 +534,7 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/classes.js",
       defineProperty = $__1.defineProperty,
       getOwnPropertyDescriptor = $__1.getOwnPropertyDescriptor,
       getOwnPropertyNames = $__1.getOwnPropertyNames,
-      getOwnPropertySymbols = $__1.getOwnPropertySymbols,
-      getPrototypeOf = $__1.getPrototypeOf;
-  function superDescriptor(homeObject, name) {
-    var proto = getPrototypeOf(homeObject);
-    do {
-      var result = getOwnPropertyDescriptor(proto, name);
-      if (result)
-        return result;
-      proto = getPrototypeOf(proto);
-    } while (proto);
-    return undefined;
-  }
-  function superConstructor(ctor) {
-    return ctor.__proto__;
-  }
-  function superGet(self, homeObject, name) {
-    var descriptor = superDescriptor(homeObject, name);
-    if (descriptor) {
-      var value = descriptor.value;
-      if (value)
-        return value;
-      if (!descriptor.get)
-        return value;
-      return descriptor.get.call(self);
-    }
-    return undefined;
-  }
-  function superSet(self, homeObject, name, value) {
-    var descriptor = superDescriptor(homeObject, name);
-    if (descriptor && descriptor.set) {
-      descriptor.set.call(self, value);
-      return value;
-    }
-    throw $TypeError(("super has no setter '" + name + "'."));
-  }
+      getOwnPropertySymbols = $__1.getOwnPropertySymbols;
   function forEachPropertyKey(object, f) {
     getOwnPropertyNames(object).forEach(f);
     if (getOwnPropertySymbols) {
@@ -594,6 +576,7 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/classes.js",
     });
     return defineProperties(ctor, getDescriptors(staticObject));
   }
+  var $__default = createClass;
   function getProtoParent(superClass) {
     if (typeof superClass === 'function') {
       var prototype = superClass.prototype;
@@ -605,15 +588,97 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/classes.js",
       return null;
     throw new $TypeError(("Super expression must either be null or a function, not " + typeof superClass + "."));
   }
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/superConstructor.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/superConstructor.js";
+  function superConstructor(ctor) {
+    return ctor.__proto__;
+  }
+  var $__default = superConstructor;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/superDescriptor.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/superDescriptor.js";
+  var $__1 = Object,
+      getOwnPropertyDescriptor = $__1.getOwnPropertyDescriptor,
+      getPrototypeOf = $__1.getPrototypeOf;
+  function superDescriptor(homeObject, name) {
+    var proto = getPrototypeOf(homeObject);
+    do {
+      var result = getOwnPropertyDescriptor(proto, name);
+      if (result)
+        return result;
+      proto = getPrototypeOf(proto);
+    } while (proto);
+    return undefined;
+  }
+  var $__default = superDescriptor;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/superGet.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/superGet.js";
+  var superDescriptor = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./superDescriptor.js", "traceur-runtime@0.0.103/src/runtime/modules/superGet.js")).default;
+  function superGet(self, homeObject, name) {
+    var descriptor = superDescriptor(homeObject, name);
+    if (descriptor) {
+      var value = descriptor.value;
+      if (value)
+        return value;
+      if (!descriptor.get)
+        return value;
+      return descriptor.get.call(self);
+    }
+    return undefined;
+  }
+  var $__default = superGet;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/superSet.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/superSet.js";
+  var superDescriptor = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./superDescriptor.js", "traceur-runtime@0.0.103/src/runtime/modules/superSet.js")).default;
+  var $TypeError = TypeError;
+  function superSet(self, homeObject, name, value) {
+    var descriptor = superDescriptor(homeObject, name);
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(self, value);
+      return value;
+    }
+    throw $TypeError(("super has no setter '" + name + "'."));
+  }
+  var $__default = superSet;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/classes.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/classes.js";
+  var createClass = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/createClass.js", "traceur-runtime@0.0.103/src/runtime/classes.js")).default;
+  var superConstructor = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/superConstructor.js", "traceur-runtime@0.0.103/src/runtime/classes.js")).default;
+  var superGet = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/superGet.js", "traceur-runtime@0.0.103/src/runtime/classes.js")).default;
+  var superSet = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/superSet.js", "traceur-runtime@0.0.103/src/runtime/classes.js")).default;
   $traceurRuntime.createClass = createClass;
   $traceurRuntime.superConstructor = superConstructor;
   $traceurRuntime.superGet = superGet;
   $traceurRuntime.superSet = superSet;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/exportStar.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/exportStar.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/exportStar.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/exportStar.js";
   var $__1 = Object,
       defineProperty = $__1.defineProperty,
       getOwnPropertyNames = $__1.getOwnPropertyNames;
@@ -648,13 +713,22 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/exportStar.j
     }
     return object;
   }
+  var $__default = exportStar;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/exportStar.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/exportStar.js";
+  var exportStar = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/exportStar.js", "traceur-runtime@0.0.103/src/runtime/exportStar.js")).default;
   $traceurRuntime.exportStar = exportStar;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private-symbol.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/private-symbol.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/private-symbol.js";
-  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./new-unique-string.js", "traceur-runtime@0.0.102/src/runtime/private-symbol.js")).default;
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/private-symbol.js";
+  var newUniqueString = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./new-unique-string.js", "traceur-runtime@0.0.103/src/runtime/private-symbol.js")).default;
   var $Symbol = typeof Symbol === 'function' ? Symbol : undefined;
   var $getOwnPropertySymbols = Object.getOwnPropertySymbols;
   var $create = Object.create;
@@ -731,9 +805,9 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private-symb
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private-weak-map.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/private-weak-map.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/private-weak-map.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/private-weak-map.js";
   var $WeakMap = typeof WeakMap === 'function' ? WeakMap : undefined;
   function isPrivateSymbol(s) {
     return false;
@@ -778,11 +852,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private-weak
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/private.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/private.js";
-  var sym = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-symbol.js", "traceur-runtime@0.0.102/src/runtime/private.js"));
-  var weak = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-weak-map.js", "traceur-runtime@0.0.102/src/runtime/private.js"));
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/private.js";
+  var sym = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-symbol.js", "traceur-runtime@0.0.103/src/runtime/private.js"));
+  var weak = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private-weak-map.js", "traceur-runtime@0.0.103/src/runtime/private.js"));
   var hasWeakMap = typeof WeakMap === 'function';
   var m = hasWeakMap ? weak : sym;
   var isPrivateSymbol = m.isPrivateSymbol;
@@ -813,10 +887,10 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/private.js",
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/properTailCalls.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/properTailCalls.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/properTailCalls.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.102/src/runtime/properTailCalls.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/properTailCalls.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/modules/properTailCalls.js")),
       getPrivate = $__0.getPrivate,
       setPrivate = $__0.setPrivate,
       createPrivateSymbol = $__0.createPrivateSymbol;
@@ -900,15 +974,38 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/properTailCa
     setPrivate(func, isTailRecursiveName, true);
     return func;
   }
+  return {
+    get construct() {
+      return construct;
+    },
+    get initTailRecursiveFunction() {
+      return initTailRecursiveFunction;
+    },
+    get call() {
+      return tailCall;
+    },
+    get continuation() {
+      return createContinuation;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/properTailCalls.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/properTailCalls.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/properTailCalls.js", "traceur-runtime@0.0.103/src/runtime/properTailCalls.js")),
+      initTailRecursiveFunction = $__0.initTailRecursiveFunction,
+      call = $__0.call,
+      continuation = $__0.continuation,
+      construct = $__0.construct;
   $traceurRuntime.initTailRecursiveFunction = initTailRecursiveFunction;
-  $traceurRuntime.call = tailCall;
-  $traceurRuntime.continuation = createContinuation;
+  $traceurRuntime.call = call;
+  $traceurRuntime.continuation = continuation;
   $traceurRuntime.construct = construct;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/relativeRequire.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/relativeRequire.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/relativeRequire.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/relativeRequire.js";
   var path;
   function relativeRequire(callerPath, requiredPath) {
     path = path || typeof require !== 'undefined' && require('path');
@@ -928,9 +1025,9 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/relativeRequ
   $traceurRuntime.require = relativeRequire;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/checkObjectCoercible.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/checkObjectCoercible.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/checkObjectCoercible.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/checkObjectCoercible.js";
   var $TypeError = TypeError;
   function checkObjectCoercible(v) {
     if (v === null || v === undefined) {
@@ -943,10 +1040,10 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/checkObjectC
       return $__default;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/spread.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/spread.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/spread.js";
-  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./checkObjectCoercible.js", "traceur-runtime@0.0.102/src/runtime/spread.js")).default;
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/spread.js";
+  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../checkObjectCoercible.js", "traceur-runtime@0.0.103/src/runtime/modules/spread.js")).default;
   function spread() {
     var rv = [],
         j = 0,
@@ -963,12 +1060,21 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/spread.js", 
     }
     return rv;
   }
+  var $__default = spread;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/spread.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/spread.js";
+  var spread = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/spread.js", "traceur-runtime@0.0.103/src/runtime/spread.js")).default;
   $traceurRuntime.spread = spread;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/destructuring.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/iteratorToArray.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/destructuring.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/iteratorToArray.js";
   function iteratorToArray(iter) {
     var rv = [];
     var i = 0;
@@ -978,13 +1084,22 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/destructurin
     }
     return rv;
   }
+  var $__default = iteratorToArray;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/destructuring.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/destructuring.js";
+  var iteratorToArray = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/iteratorToArray.js", "traceur-runtime@0.0.103/src/runtime/destructuring.js")).default;
   $traceurRuntime.iteratorToArray = iteratorToArray;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/async.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/async.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.102/src/runtime/async.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/async.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/modules/async.js")),
       createPrivateSymbol = $__0.createPrivateSymbol,
       getPrivate = $__0.getPrivate,
       setPrivate = $__0.setPrivate;
@@ -1000,7 +1115,7 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [
   var AsyncGeneratorContext = function() {
     function AsyncGeneratorContext(observer) {
       var $__3 = this;
-      this.decoratedObserver = $traceurRuntime.createDecoratedGenerator(observer, function() {
+      this.decoratedObserver = createDecoratedGenerator(observer, function() {
         $__3.done = true;
       });
       this.done = false;
@@ -1036,7 +1151,7 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [
       },
       yieldFor: function(observable) {
         var ctx = this;
-        return $traceurRuntime.observeForEach(observable[Symbol.observer].bind(observable), function(value) {
+        return observeForEach(observable[Symbol.observer].bind(observable), function(value) {
           if (ctx.done) {
             this.return();
             return;
@@ -1062,7 +1177,7 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [
   AsyncGeneratorFunctionPrototype.prototype[Symbol.observer] = function(observer) {
     var observe = getPrivate(this, observeName);
     var ctx = new AsyncGeneratorContext(observer);
-    $traceurRuntime.schedule(function() {
+    schedule(function() {
       return observe(ctx);
     }).then(function(value) {
       if (!ctx.done) {
@@ -1172,6 +1287,72 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [
     return decoratedObserver;
   };
   defineProperty(Array.prototype, Symbol.observer, {enumerable: false});
+  return {
+    get initAsyncGeneratorFunction() {
+      return initAsyncGeneratorFunction;
+    },
+    get createAsyncGeneratorInstance() {
+      return createAsyncGeneratorInstance;
+    },
+    get observeForEach() {
+      return observeForEach;
+    },
+    get schedule() {
+      return schedule;
+    },
+    get createDecoratedGenerator() {
+      return createDecoratedGenerator;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/initAsyncGeneratorFunction.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/initAsyncGeneratorFunction.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/modules/initAsyncGeneratorFunction.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__.initAsyncGeneratorFunction;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/createAsyncGeneratorInstance.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/createAsyncGeneratorInstance.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/modules/createAsyncGeneratorInstance.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__.createAsyncGeneratorInstance;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/observeForEach.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/observeForEach.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/modules/observeForEach.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__.observeForEach;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/schedule.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/schedule.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/modules/schedule.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__.schedule;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/createDecoratedGenerator.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/createDecoratedGenerator.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/modules/createDecoratedGenerator.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_async_46_js__.createDecoratedGenerator;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/async.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/async.js";
+  var initAsyncGeneratorFunction = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/initAsyncGeneratorFunction.js", "traceur-runtime@0.0.103/src/runtime/async.js")).default;
+  var createAsyncGeneratorInstance = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/createAsyncGeneratorInstance.js", "traceur-runtime@0.0.103/src/runtime/async.js")).default;
+  var observeForEach = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/observeForEach.js", "traceur-runtime@0.0.103/src/runtime/async.js")).default;
+  var schedule = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/schedule.js", "traceur-runtime@0.0.103/src/runtime/async.js")).default;
+  var createDecoratedGenerator = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/createDecoratedGenerator.js", "traceur-runtime@0.0.103/src/runtime/async.js")).default;
   $traceurRuntime.initAsyncGeneratorFunction = initAsyncGeneratorFunction;
   $traceurRuntime.createAsyncGeneratorInstance = createAsyncGeneratorInstance;
   $traceurRuntime.observeForEach = observeForEach;
@@ -1179,10 +1360,10 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/async.js", [
   $traceurRuntime.createDecoratedGenerator = createDecoratedGenerator;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/generators.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/generators.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/generators.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./private.js", "traceur-runtime@0.0.102/src/runtime/generators.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/generators.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/modules/generators.js")),
       createPrivateSymbol = $__0.createPrivateSymbol,
       getPrivate = $__0.getPrivate,
       setPrivate = $__0.setPrivate;
@@ -1469,14 +1650,56 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/generators.j
     if (last.finallyFallThrough !== undefined)
       ctx.finallyFallThrough = last.finallyFallThrough;
   }
+  return {
+    get createGeneratorInstance() {
+      return createGeneratorInstance;
+    },
+    get initGeneratorFunction() {
+      return initGeneratorFunction;
+    },
+    get asyncWrap() {
+      return asyncWrap;
+    }
+  };
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/asyncWrap.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/asyncWrap.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.103/src/runtime/modules/asyncWrap.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__.asyncWrap;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/initGeneratorFunction.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/initGeneratorFunction.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.103/src/runtime/modules/initGeneratorFunction.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__.initGeneratorFunction;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/createGeneratorInstance.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/createGeneratorInstance.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.103/src/runtime/modules/createGeneratorInstance.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_modules_47_generators_46_js__.createGeneratorInstance;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/generators.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/generators.js";
+  var asyncWrap = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/asyncWrap.js", "traceur-runtime@0.0.103/src/runtime/generators.js")).default;
+  var initGeneratorFunction = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/initGeneratorFunction.js", "traceur-runtime@0.0.103/src/runtime/generators.js")).default;
+  var createGeneratorInstance = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/createGeneratorInstance.js", "traceur-runtime@0.0.103/src/runtime/generators.js")).default;
   $traceurRuntime.asyncWrap = asyncWrap;
   $traceurRuntime.initGeneratorFunction = initGeneratorFunction;
   $traceurRuntime.createGeneratorInstance = createGeneratorInstance;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/template.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/getTemplateObject.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/template.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/getTemplateObject.js";
   var $__1 = Object,
       defineProperty = $__1.defineProperty,
       freeze = $__1.freeze;
@@ -1493,28 +1716,75 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/template.js"
     }
     return map[key] = freeze(defineProperty(cooked, 'raw', {value: freeze(raw)}));
   }
+  var $__default = getTemplateObject;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/template.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/template.js";
+  var getTemplateObject = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/getTemplateObject.js", "traceur-runtime@0.0.103/src/runtime/template.js")).default;
   $traceurRuntime.getTemplateObject = getTemplateObject;
   return {};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/runtime-modules.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/assign.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/runtime-modules.js";
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./symbols.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./classes.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./exportStar.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./properTailCalls.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./relativeRequire.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./spread.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./destructuring.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
-  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./template.js", "traceur-runtime@0.0.102/src/runtime/runtime-modules.js"));
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/assign.js";
+  var keys = Object.keys;
+  function assign(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+      var props = source == null ? [] : keys(source);
+      var p = void 0,
+          length = props.length;
+      for (p = 0; p < length; p++) {
+        var name = props[p];
+        target[name] = source[name];
+      }
+    }
+    return target;
+  }
+  var $__default = assign;
+  return {get default() {
+      return $__default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/modules/objectAssign.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/modules/objectAssign.js";
+  var $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_polyfills_47_assign_46_js__ = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../polyfills/assign.js", "traceur-runtime@0.0.103/src/runtime/modules/objectAssign.js"));
+  return {get default() {
+      return $__traceur_45_runtime_64_0_46_0_46_103_47_src_47_runtime_47_polyfills_47_assign_46_js__.default;
+    }};
+});
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/jsx.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/jsx.js";
+  var objectAssign = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./modules/objectAssign.js", "traceur-runtime@0.0.103/src/runtime/jsx.js")).default;
+  $traceurRuntime.objectAssign = objectAssign;
   return {};
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/runtime-modules.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/frozen-data.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/runtime-modules.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/frozen-data.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/runtime-modules.js";
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./symbols.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./classes.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./exportStar.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./properTailCalls.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./relativeRequire.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./spread.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./destructuring.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./async.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./generators.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./template.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./jsx.js", "traceur-runtime@0.0.103/src/runtime/runtime-modules.js"));
+  return {};
+});
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/runtime-modules.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/frozen-data.js", [], function() {
+  "use strict";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/frozen-data.js";
   function findIndex(arr, key) {
     for (var i = 0; i < arr.length; i += 2) {
       if (arr[i] === key) {
@@ -1562,9 +1832,9 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/frozen-data.
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/utils.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/utils.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/utils.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/utils.js";
   var $ceil = Math.ceil;
   var $floor = Math.floor;
   var $isFinite = isFinite;
@@ -1729,21 +1999,21 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/ut
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Map.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Map.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Map.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Map.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Map.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Map.js")),
       createPrivateSymbol = $__0.createPrivateSymbol,
       getPrivate = $__0.getPrivate,
       setPrivate = $__0.setPrivate;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Map.js")),
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Map.js")),
       deleteFrozen = $__1.deleteFrozen,
       getFrozen = $__1.getFrozen,
       setFrozen = $__1.setFrozen;
-  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Map.js")),
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Map.js")),
       isObject = $__2.isObject,
       registerPolyfill = $__2.registerPolyfill;
-  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Map.js")).default;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Map.js")).default;
   var $__13 = Object,
       defineProperty = $__13.defineProperty,
       getOwnPropertyDescriptor = $__13.getOwnPropertyDescriptor,
@@ -2048,15 +2318,15 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ma
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Map.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Set.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Map.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Set.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Set.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Set.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Set.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Set.js")),
       isObject = $__0.isObject,
       registerPolyfill = $__0.registerPolyfill;
-  var Map = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./Map.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Set.js")).Map;
-  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Set.js")).default;
+  var Map = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./Map.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Set.js")).Map;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Set.js")).default;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var Set = function() {
     function Set() {
@@ -2221,10 +2491,10 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Se
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Set.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/node_modules/rsvp/lib/rsvp/asap.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Set.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/node_modules/rsvp/lib/rsvp/asap.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/node_modules/rsvp/lib/rsvp/asap.js";
+  var __moduleName = "traceur-runtime@0.0.103/node_modules/rsvp/lib/rsvp/asap.js";
   var len = 0;
   var toString = {}.toString;
   var vertxNext;
@@ -2315,14 +2585,14 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/node_modules/rsvp/lib/rs
       return $__default;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js";
-  var async = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../../../node_modules/rsvp/lib/rsvp/asap.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js")).default;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js";
+  var async = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../../../node_modules/rsvp/lib/rsvp/asap.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js")).default;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js")),
       isObject = $__1.isObject,
       registerPolyfill = $__1.registerPolyfill;
-  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js")),
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js")),
       createPrivateSymbol = $__2.createPrivateSymbol,
       getPrivate = $__2.getPrivate,
       setPrivate = $__2.setPrivate;
@@ -2589,11 +2859,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Pr
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Promise.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/StringIterator.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Promise.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/StringIterator.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/StringIterator.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/StringIterator.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/StringIterator.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/StringIterator.js")),
       createIteratorResultObject = $__0.createIteratorResultObject,
       isObject = $__0.isObject;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -2656,12 +2926,12 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/St
       return createStringIterator;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/String.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/String.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/String.js";
-  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../checkObjectCoercible.js", "traceur-runtime@0.0.102/src/runtime/polyfills/String.js")).default;
-  var createStringIterator = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./StringIterator.js", "traceur-runtime@0.0.102/src/runtime/polyfills/String.js")).createStringIterator;
-  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/String.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/String.js";
+  var checkObjectCoercible = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../checkObjectCoercible.js", "traceur-runtime@0.0.103/src/runtime/polyfills/String.js")).default;
+  var createStringIterator = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./StringIterator.js", "traceur-runtime@0.0.103/src/runtime/polyfills/String.js")).createStringIterator;
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/String.js")),
       maybeAddFunctions = $__2.maybeAddFunctions,
       maybeAddIterator = $__2.maybeAddIterator,
       registerPolyfill = $__2.registerPolyfill;
@@ -2857,11 +3127,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/St
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/String.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/ArrayIterator.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/String.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/ArrayIterator.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/ArrayIterator.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/ArrayIterator.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/ArrayIterator.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/ArrayIterator.js")),
       toObject = $__0.toObject,
       toUint32 = $__0.toUint32,
       createIteratorResultObject = $__0.createIteratorResultObject;
@@ -2933,14 +3203,14 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ar
     }
   };
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Array.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Array.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Array.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./ArrayIterator.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Array.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Array.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./ArrayIterator.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Array.js")),
       entries = $__0.entries,
       keys = $__0.keys,
       jsValues = $__0.values;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Array.js")),
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Array.js")),
       checkIterable = $__1.checkIterable,
       isCallable = $__1.isCallable,
       isConstructor = $__1.isConstructor,
@@ -3099,35 +3369,22 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ar
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Array.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Object.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Array.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Object.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Object.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Object.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Object.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Object.js")),
       maybeAddFunctions = $__0.maybeAddFunctions,
       registerPolyfill = $__0.registerPolyfill;
-  var $__2 = Object,
-      defineProperty = $__2.defineProperty,
-      getOwnPropertyDescriptor = $__2.getOwnPropertyDescriptor,
-      getOwnPropertyNames = $__2.getOwnPropertyNames,
-      keys = $__2.keys;
+  var assign = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./assign.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Object.js")).default;
+  var $__3 = Object,
+      defineProperty = $__3.defineProperty,
+      getOwnPropertyDescriptor = $__3.getOwnPropertyDescriptor,
+      getOwnPropertyNames = $__3.getOwnPropertyNames;
   function is(left, right) {
     if (left === right)
       return left !== 0 || 1 / left === 1 / right;
     return left !== left && right !== right;
-  }
-  function assign(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-      var props = source == null ? [] : keys(source);
-      var p = void 0,
-          length = props.length;
-      for (p = 0; p < length; p++) {
-        var name = props[p];
-        target[name] = source[name];
-      }
-    }
-    return target;
   }
   function mixin(target, source) {
     var props = getOwnPropertyNames(source);
@@ -3147,11 +3404,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ob
   }
   registerPolyfill(polyfillObject);
   return {
-    get is() {
-      return is;
-    },
     get assign() {
       return assign;
+    },
+    get is() {
+      return is;
     },
     get mixin() {
       return mixin;
@@ -3161,11 +3418,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ob
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Object.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Number.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Object.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Number.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Number.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Number.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Number.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Number.js")),
       isNumber = $__0.isNumber,
       maybeAddConsts = $__0.maybeAddConsts,
       maybeAddFunctions = $__0.maybeAddFunctions,
@@ -3227,10 +3484,10 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Nu
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Number.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/fround.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Number.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/fround.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/fround.js";
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/fround.js";
   var $isFinite = isFinite;
   var $isNaN = isNaN;
   var $__1 = Math,
@@ -3361,11 +3618,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/fr
       return fround;
     }};
 });
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Math.js", [], function() {
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/Math.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/Math.js";
-  var jsFround = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./fround.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Math.js")).fround;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/Math.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/Math.js";
+  var jsFround = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./fround.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Math.js")).fround;
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/Math.js")),
       maybeAddFunctions = $__1.maybeAddFunctions,
       registerPolyfill = $__1.registerPolyfill,
       toUint32 = $__1.toUint32;
@@ -3655,25 +3912,25 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/Ma
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/Math.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/Math.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js")),
       createPrivateSymbol = $__0.createPrivateSymbol,
       deletePrivate = $__0.deletePrivate,
       getPrivate = $__0.getPrivate,
       hasPrivate = $__0.hasPrivate,
       setPrivate = $__0.setPrivate;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js")),
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js")),
       deleteFrozen = $__1.deleteFrozen,
       getFrozen = $__1.getFrozen,
       hasFrozen = $__1.hasFrozen,
       setFrozen = $__1.setFrozen;
-  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js")),
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js")),
       isObject = $__2.isObject,
       registerPolyfill = $__2.registerPolyfill;
-  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js")).default;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js")).default;
   var $__6 = Object,
       defineProperty = $__6.defineProperty,
       getOwnPropertyDescriptor = $__6.getOwnPropertyDescriptor,
@@ -3753,24 +4010,24 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/We
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/WeakMap.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/WeakMap.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js";
-  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js")),
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js";
+  var $__0 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../private.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js")),
       createPrivateSymbol = $__0.createPrivateSymbol,
       deletePrivate = $__0.deletePrivate,
       getPrivate = $__0.getPrivate,
       hasPrivate = $__0.hasPrivate,
       setPrivate = $__0.setPrivate;
-  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js")),
+  var $__1 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../frozen-data.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js")),
       deleteFrozen = $__1.deleteFrozen,
       getFrozen = $__1.getFrozen,
       setFrozen = $__1.setFrozen;
-  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js")),
+  var $__2 = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js")),
       isObject = $__2.isObject,
       registerPolyfill = $__2.registerPolyfill;
-  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js")).default;
+  var hasNativeSymbol = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("../has-native-symbols.js", "traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js")).default;
   var $__6 = Object,
       defineProperty = $__6.defineProperty,
       isExtensible = $__6.isExtensible;
@@ -3840,11 +4097,11 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/We
     }
   };
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/WeakSet.js" + '');
-$traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/polyfills.js", [], function() {
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/WeakSet.js" + '');
+$traceurRuntime.registerModule("traceur-runtime@0.0.103/src/runtime/polyfills/polyfills.js", [], function() {
   "use strict";
-  var __moduleName = "traceur-runtime@0.0.102/src/runtime/polyfills/polyfills.js";
-  var polyfillAll = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.102/src/runtime/polyfills/polyfills.js")).polyfillAll;
+  var __moduleName = "traceur-runtime@0.0.103/src/runtime/polyfills/polyfills.js";
+  var polyfillAll = $traceurRuntime.getModule($traceurRuntime.normalizeModuleName("./utils.js", "traceur-runtime@0.0.103/src/runtime/polyfills/polyfills.js")).polyfillAll;
   polyfillAll(Reflect.global);
   var setupGlobals = $traceurRuntime.setupGlobals;
   $traceurRuntime.setupGlobals = function(global) {
@@ -3853,4 +4110,4 @@ $traceurRuntime.registerModule("traceur-runtime@0.0.102/src/runtime/polyfills/po
   };
   return {};
 });
-$traceurRuntime.getModule("traceur-runtime@0.0.102/src/runtime/polyfills/polyfills.js" + '');
+$traceurRuntime.getModule("traceur-runtime@0.0.103/src/runtime/polyfills/polyfills.js" + '');
